@@ -177,16 +177,86 @@
     return ka.join('\n') === kb.join('\n');
   }
 
+  /* ---- 6턴 C3: 되돌리기 공용 규칙 — mock 어댑터와 화면이 같은 판정·같은 적용을 쓴다 ---- */
+
+  /** 되돌리기(교체 모드)가 손댈 행 묶음 조건. 배정은 프로젝트 단위 · 공수기록은 팀원·주차 단위 · 그 밖은 백업 행의 키 */
+  function restoreScope(table, entry, rows) {
+    var first = rows[0] || {};
+    if (table === 'assignments') {
+      var pid = String(first.projectId || (entry && entry.key) || '');
+      return function (r) { return String(r.projectId || '') === pid; };
+    }
+    if (table === 'effortLogs') {
+      var mem = String(first.member || ''), wk = String(first.week || '');
+      return function (r) { return String(r.member || '') === mem && String(r.week || '') === wk; };
+    }
+    var keys = {};
+    rows.forEach(function (r) { keys[keyStrOf(table, r)] = true; });
+    return function (r) { return !!keys[keyStrOf(table, r)]; };
+  }
+
+  /** 백업 행이 그 탭의 행 형식인지 — 키 칸이 다 차 있어야 되돌릴 수 있다. 못 쓰면 사유, 쓸 수 있으면 '' */
+  function restoreRowsProblem(table, rows) {
+    if (!S.TABLES[table]) { return '알 수 없는 탭이라 되돌릴 수 없습니다.'; }
+    var keys = S.TABLES[table].key;
+    for (var i = 0; i < rows.length; i++) {
+      for (var j = 0; j < keys.length; j++) {
+        var v = rows[i] ? rows[i][keys[j]] : null;
+        if (v === null || v === undefined || String(v).trim() === '') {
+          return '다른 탭 행이 함께 지워진 기록이라 화면에서 되돌릴 수 없습니다. 시트 [변경이력] 탭의 백업으로 복원하세요.';
+        }
+      }
+    }
+    return '';
+  }
+
+  /**
+   * 되돌리기 실제 적용 — data[표] 를 백업 내용으로 되돌린다.
+   * → { before, after } · before = 되돌리기 직전의 그 묶음(이력 백업 = 되돌리기의 되돌리기용)
+   */
+  function applyRestore(data, check, entry) {
+    var table = check.table;
+    if (!Array.isArray(data[table])) { data[table] = []; }
+    var list = data[table];
+    var rows = (check.rows || []).map(function (r) { return clone(r); });
+    var inScope = restoreScope(table, entry, rows);
+    var before = list.filter(inScope).map(function (r) { return clone(r); });
+    if (check.mode === 'delete') {
+      data[table] = list.filter(function (r) { return !inScope(r); });
+      return { before: before, after: [] };
+    }
+    if (check.mode === 'replace') {
+      data[table] = list.filter(function (r) { return !inScope(r); }).concat(rows);
+      return { before: before, after: rows };
+    }
+    // row — 한 행: 있으면 덮어쓰고, 없으면(삭제 되돌리기) 다시 넣는다
+    rows.forEach(function (r) {
+      var idx = S.findRow(table, data[table], S.keyOf(table, r));
+      if (idx >= 0) { data[table][idx] = r; } else { data[table].push(r); }
+    });
+    return { before: before, after: rows };
+  }
+
+  /** 되돌리기 한 줄 요약(이력 기록용) */
+  function restoreSummary(check, entry) {
+    var t = S.TABLES[check.table];
+    var label = (t ? t.label : check.table);
+    if (check.mode === 'delete') { return label + ' 추가를 되돌림: ' + (check.rows.length || 1) + '행 삭제\n대상: ' + String((entry && entry.key) || ''); }
+    if (check.mode === 'replace') { return label + ' 저장을 되돌림: ' + check.rows.length + '행으로 교체\n대상: ' + String((entry && entry.key) || ''); }
+    return label + ' 을(를) 이전 내용으로 되돌림\n대상: ' + String((entry && entry.key) || '');
+  }
+
   function makeMockProvider(raw) {
     var data = raw;
     if (!Array.isArray(data.history)) { data.history = []; }
     function today() { return (data.meta && data.meta.today) || M.toDateStr(new Date()); }
-    /** 변경이력 앞에 끼워 넣기(최대 30) — 서버 logHistory_ 와 같은 열 구성. 응답에도 실어 화면이 그대로 쓴다 */
-    function logHistory(sheet, key, action, summary) {
+    /** 변경이력 앞에 끼워 넣기(최대 30) — 서버 logHistory_ 와 같은 열 구성(G열 = 이전 행 백업). 응답에도 실어 화면이 그대로 쓴다 */
+    function logHistory(sheet, key, action, summary, backup) {
       var entry = {
         at: today() + ' 09:00:00',
         user: (data.meta && data.meta.user) || '미리보기 사용자',
-        sheet: sheet, key: key, action: action, summary: summary
+        sheet: sheet, key: key, action: action, summary: summary,
+        backup: (backup === null || backup === undefined) ? null : clone(backup)
       };
       data.history.unshift(entry);
       if (data.history.length > 30) { data.history.length = 30; }
@@ -214,8 +284,9 @@
       while (n.length < width) { n = '0' + n; }
       return prefix + n;
     }
+    /** 6턴 D22 — 역할 목록에 있는데 블럭이 0개인 파트는 공통 블럭으로 파생해서 쓴다(서버와 같은 규칙) */
     function catalog() {
-      return (Array.isArray(data.blocks) && data.blocks.length) ? data.blocks : S.DEFAULT_BLOCKS;
+      return S.blocksWithFallback(data.blocks, data.settings).list;
     }
     /** 세부 항목의 첫 주석(유형 요청 · 파트 = 블럭 파트 · 작성자 = 접속 사용자) */
     function makeNote(item, content) {
@@ -246,6 +317,7 @@
       var r = S.assignmentsFromItems(p, data.items, data.milestones, data.assignments, data.settings);
       var hist = null;
       if (r.changed) {
+        var syncBackup = clone(data.assignments.filter(function (a) { return a.projectId === projectId; }));
         var used = {};
         data.assignments.forEach(function (a) { used[a.id] = true; });
         var auto = r.auto.map(function (a) {
@@ -259,7 +331,7 @@
         }).concat(auto);
         hist = logHistory('배정', projectId, '저장', '세부항목 동기화: ' + auto.length + '행' +
           (auto.length ? '\n자동 행: ' + auto.map(function (a) { return a.member + '(' + a.role + ' ' + a.plannedMd + ')'; }).join(', ') : '') +
-          (r.overlaps.length ? '\n수동 행과 겹침: ' + r.overlaps.map(function (o) { return o.member + '/' + o.role + ' 세부 ' + o.itemsMd + ' · 수동 ' + o.manualMd; }).join(', ') : ''));
+          (r.overlaps.length ? '\n수동 행과 겹침: ' + r.overlaps.map(function (o) { return o.member + '/' + o.role + ' 세부 ' + o.itemsMd + ' · 수동 ' + o.manualMd; }).join(', ') : ''), syncBackup);
       }
       return {
         assignments: clone(data.assignments.filter(function (a) { return a.projectId === projectId; })),
@@ -286,6 +358,7 @@
         var msg = validateRows(data, rows);
         if (msg) { return Promise.reject(new Error(msg)); }
         var used = {};
+        var replaced = clone(data.assignments.filter(function (a) { return a.projectId === projectId; }));
         var kept = data.assignments.filter(function (a) { return a.projectId !== projectId; });
         var saved = rows.map(function (r) {
           var id = r.id || nextAssignmentId(data.assignments, used);
@@ -298,7 +371,7 @@
         });
         data.assignments = kept.concat(saved);
         var hist = logHistory('배정', projectId, '저장', '배정 행 교체: ' + saved.length + '행' +
-          (saved.length ? '\n팀원: ' + saved.map(function (a) { return a.member + '(' + a.role + ' ' + a.plannedMd + ')'; }).join(', ') : ''));
+          (saved.length ? '\n팀원: ' + saved.map(function (a) { return a.member + '(' + a.role + ' ' + a.plannedMd + ')'; }).join(', ') : ''), replaced);
         // 5턴: 저장 뒤 세부 항목 합계로 자동 행을 다시 맞춘다(수동 행을 지우면 자동 행이 생긴다) → 응답은 프로젝트 행 전체
         return Promise.resolve(attachSync({ ok: true, projectId: projectId, history: hist }, projectId));
       },
@@ -311,7 +384,7 @@
         if (!hit) { return Promise.reject(new Error('해당 마일스톤을 찾을 수 없습니다.')); }
         var before = clone(hit);
         hit.done = date || today();
-        var hist = logHistory('마일스톤', S.keyLabel('milestones', hit), '수정', S.summarize('milestones', '수정', before, hit));
+        var hist = logHistory('마일스톤', S.keyLabel('milestones', hit), '수정', S.summarize('milestones', '수정', before, hit), before);
         return Promise.resolve({ ok: true, projectId: projectId, name: name, done: hit.done, history: hist });
       },
       createStandardMilestones: function (projectId) {
@@ -350,6 +423,7 @@
           var idx = S.findRow(table, list, S.keyOf(table, expected));
           if (idx < 0) { return Promise.reject(new Error(t.label + ' 행을 찾을 수 없습니다: ' + S.keyLabel(table, expected) + '. 화면을 새로고침하세요.')); }
           var current = list[idx];
+          var currentBackup = clone(current);
           if (S.diff(table, expected, current).length) { return Promise.reject(new Error(CONFLICT_MSG)); }
           t.fields.forEach(function (fd) { if (fd.auto) { values[fd.key] = current[fd.key]; } });
           if (table === 'effortLogs') { values.loggedAt = today() + ' 09:00'; }
@@ -364,7 +438,7 @@
             renamed = renameCascade(values.projectId, current.name, values.name);
             if (renamed.items || renamed.notes) { extra = '마일스톤 이름 변경 연쇄: 세부 항목 ' + renamed.items + ' · 주석 ' + renamed.notes; }
           }
-          hist = logHistory(t.sheet, S.keyLabel(table, values), '수정', S.summarize(table, '수정', current, values, extra));
+          hist = logHistory(t.sheet, S.keyLabel(table, values), '수정', S.summarize(table, '수정', current, values, extra), currentBackup);
           var edited = { ok: true, table: table, created: false, row: clone(values), history: hist };
           if (renamed) { edited.renamed = renamed; }
           if (table === 'items') { attachSync(edited, values.projectId); }
@@ -403,7 +477,7 @@
           if (table === 'effortLogs') { values.loggedAt = today() + ' 09:00'; }
           list.push(values);
         }
-        hist = logHistory(t.sheet, S.keyLabel(table, values), '추가', S.summarize(table, '추가', null, values, extra));
+        hist = logHistory(t.sheet, S.keyLabel(table, values), '추가', S.summarize(table, '추가', null, values, extra), null);
         var out = { ok: true, table: table, created: true, row: clone(values), history: hist };
         if (milestonesRes) { out.milestones = milestonesRes; }
         if (firstNote) { out.firstNote = clone(firstNote); }
@@ -421,7 +495,16 @@
         var chk = S.deleteCheck(table, row, data);
         if (!chk.ok) { return Promise.reject(new Error(chk.reason)); }
         var removed = { assignments: 0, milestones: 0, settlements: 0, items: 0, notes: 0 };
+        var backup = clone(row);                    // 서버 logHistory_ 와 같은 백업 모양(연쇄 삭제는 묶음 객체)
         if (table === 'projects') {
+          backup = {
+            project: clone(row),
+            assignments: clone((data.assignments || []).filter(function (r) { return r.projectId === row.id; })),
+            milestones: clone((data.milestones || []).filter(function (r) { return r.projectId === row.id; })),
+            settlement: clone((data.settlements || []).filter(function (r) { return r.projectId === row.id; })[0] || null),
+            items: clone((data.items || []).filter(function (r) { return r.projectId === row.id; })),
+            notes: clone((data.notes || []).filter(function (r) { return r.projectId === row.id; }))
+          };
           ['assignments', 'milestones', 'settlements', 'items', 'notes'].forEach(function (k) {
             if (!Array.isArray(data[k])) { data[k] = []; }
             var before = data[k].length;
@@ -432,6 +515,7 @@
         if (table === 'items') {
           // 5턴: 그 세부ID 의 주석 연쇄 삭제
           if (!Array.isArray(data.notes)) { data.notes = []; }
+          backup = { item: clone(row), notes: clone(data.notes.filter(function (n) { return s(n.itemId) === s(row.id); })) };
           var nBefore = data.notes.length;
           data.notes = data.notes.filter(function (n) { return s(n.itemId) !== s(row.id); });
           removed.notes = nBefore - data.notes.length;
@@ -439,13 +523,15 @@
         if (table === 'milestones') {
           // 5턴: 마일스톤 단위 주석(세부ID 없음) 연쇄 삭제 — 세부 항목이 있으면 deleteCheck 가 이미 막았다
           if (!Array.isArray(data.notes)) { data.notes = []; }
+          var msNotes = data.notes.filter(function (n) { return s(n.projectId) === s(row.projectId) && s(n.milestone) === s(row.name) && s(n.itemId) === ''; });
+          if (msNotes.length) { backup = { milestone: clone(row), notes: clone(msNotes) }; }
           var mBefore = data.notes.length;
           data.notes = data.notes.filter(function (n) { return !(s(n.projectId) === s(row.projectId) && s(n.milestone) === s(row.name) && s(n.itemId) === ''); });
           removed.notes = mBefore - data.notes.length;
         }
         list.splice(idx, 1);
         var extra = cascadeText(removed);
-        var hist = logHistory(t.sheet, S.keyLabel(table, row), '삭제', S.summarize(table, '삭제', row, null, extra));
+        var hist = logHistory(t.sheet, S.keyLabel(table, row), '삭제', S.summarize(table, '삭제', row, null, extra), backup);
         var delOut = { ok: true, table: table, key: S.keyOf(table, row), removed: removed, history: hist };
         if (table === 'items') { attachSync(delOut, row.projectId); }
         return Promise.resolve(delOut);
@@ -490,7 +576,7 @@
           '블럭 추가: ' + created.length + '건 · 건너뜀 ' + skipped.length + '건' +
           (created.length ? '\n블럭: ' + created.map(function (it) { return it.part + ' / ' + it.block + ' (' + it.plannedMd + ')'; }).join(', ') : '') +
           (notes.length ? '\n첫 주석 ' + notes.length + '건 생성' : '') +
-          (skipped.length ? '\n건너뜀: ' + skipped.join(', ') : ''));
+          (skipped.length ? '\n건너뜀: ' + skipped.join(', ') : ''), null);
         return Promise.resolve(attachSync({ ok: true, projectId: projectId, milestone: milestone, items: created, notes: notes, skipped: skipped, history: hist }, projectId));
       },
       saveEffortWeek: function (member, week, rows, expected) {
@@ -507,11 +593,106 @@
         var lines = ['실투입 M/D 합계: ' + v.total + ' (' + saved.length + '행)'].concat(saved.map(function (r) {
           return '프로젝트ID ' + r.projectId + ': ' + r.md + (r.memo ? ' · ' + r.memo : '');
         }));
-        var hist = logHistory('공수기록', week + ' · ' + member, '저장', lines.join('\n'));
+        var hist = logHistory('공수기록', week + ' · ' + member, '저장', lines.join('\n'), clone(current));
         return Promise.resolve({ ok: true, member: member, week: week, effortLogs: clone(saved), history: hist });
+      },
+
+      /* ---- 6턴 C2: 지연 마일스톤 일괄 처리 — 서버 bulkMilestone 과 같은 검증·이력(묶음 1건) ---- */
+      bulkMilestone: function (req) {
+        var r = req || {};
+        console.info('[mock write] bulkMilestone', { action: r.action, keys: r.keys, payload: r.payload });
+        var keys = Array.isArray(r.keys) ? r.keys : [];
+        var picked = [], missing = [];
+        keys.forEach(function (k) {
+          var key = (typeof k === 'string') ? { projectId: String(k).split('|')[0], name: String(k).split('|').slice(1).join('|') } : k;
+          var idx = S.findRow('milestones', data.milestones, S.keyOf('milestones', key));
+          if (idx < 0) { missing.push(S.keyLabel('milestones', key)); } else { picked.push({ idx: idx, row: data.milestones[idx] }); }
+        });
+        if (missing.length) { return Promise.reject(new Error('마일스톤을 찾을 수 없습니다: ' + missing.join(', ') + '. 화면을 새로고침하세요.')); }
+        var v = S.validateBulkMilestone(r.action, picked.map(function (p) { return p.row; }), r.payload || {}, ctxOf('edit', null));
+        if (!v.ok) { return Promise.reject(new Error(firstErrorMessage(v.errors))); }
+        var expected = Array.isArray(r.expected) ? r.expected : null;
+        if (expected) {
+          for (var i = 0; i < picked.length; i++) {
+            var exp = expected[i];
+            if (!exp || S.diff('milestones', exp, picked[i].row).length) { return Promise.reject(new Error(CONFLICT_MSG)); }
+          }
+        }
+        var backup = picked.map(function (p) { return clone(p.row); });
+        var saved = [];
+        var pids = {};
+        picked.forEach(function (p, i) {
+          var next = v.values[i];
+          // 수식 열(F 지연일)은 서버가 건드리지 않는다 — 행 단위 부분 쓰기와 같은 결과
+          data.milestones[p.idx] = next;
+          saved.push(clone(next));
+          pids[next.projectId] = true;
+        });
+        var word = (r.action === 'complete') ? '완료 처리' : '예정일 조정';
+        var hist = logHistory('마일스톤', '일괄 ' + word + ' ' + saved.length + '건', '저장',
+          '일괄 ' + word + ': ' + saved.length + '건' +
+          '\n대상: ' + saved.map(function (m) { return m.projectId + ' · ' + m.name + (r.action === 'complete' ? ' → 완료 ' + m.done : ' → 예정 ' + m.due); }).join(', ') +
+          (v.warnings.length ? '\n확인: ' + v.warnings.join(' / ') : ''), backup);
+        // 예정일·완료일이 바뀌면 그 프로젝트의 자동 배정 기간을 다시 맞춘다(A3 알려진 이슈)
+        var extra = [];
+        Object.keys(pids).forEach(function (pid) {
+          var sy = syncAssignments(pid);
+          if (sy.history) { extra.push(sy.history); }
+        });
+        return Promise.resolve({
+          ok: true, action: r.action, milestones: saved, warnings: v.warnings,
+          assignments: clone(data.assignments), history: hist, historyExtra: extra
+        });
+      },
+
+      /* ---- 6턴 C3: 변경이력 되돌리기 — 복원 직전 상태를 백업에 넣어 "되돌림" 이력 1건 ---- */
+      restoreHistory: function (req) {
+        var r = req || {};
+        console.info('[mock write] restoreHistory', { index: r.index, row: r.row });
+        var idx = Number(r.index);
+        var entry = (isFinite(idx) && idx >= 0) ? data.history[idx] : null;
+        if (!entry) { return Promise.reject(new Error('되돌릴 변경 기록을 찾을 수 없습니다. 화면을 새로고침하세요.')); }
+        var exp = r.expected || null;
+        if (exp && (s(exp.at) !== s(entry.at) || s(exp.key) !== s(entry.key) || s(exp.action) !== s(entry.action))) {
+          return Promise.reject(new Error(CONFLICT_MSG));
+        }
+        var chk = S.restoreCheck(entry, data);
+        if (!chk.ok) { return Promise.reject(new Error(chk.reason)); }
+        var problem = restoreRowsProblem(chk.table, chk.rows);
+        if (problem) { return Promise.reject(new Error(problem)); }
+        var res = applyRestore(data, chk, entry);
+        var t = S.TABLES[chk.table];
+        var hist = logHistory(t.sheet, String(entry.key || ''), '되돌림', restoreSummary(chk, entry), res.before);
+        var out = { ok: true, table: chk.table, mode: chk.mode, rows: clone(data[chk.table]), history: hist, historyExtra: [] };
+        if (chk.table === 'items' || chk.table === 'assignments') {
+          var pid = String((res.after[0] || res.before[0] || {}).projectId || '');
+          if (pid && chk.table === 'items') {
+            var sy2 = syncAssignments(pid);
+            out.assignments = sy2.assignments;
+            if (sy2.history) { out.historyExtra.push(sy2.history); }
+          }
+        }
+        return Promise.resolve(out);
       }
     };
   }
+
+  /**
+   * gas 모드에서 부를 서버 함수 이름 — 서버(Code.gs)와 맞추는 곳은 여기 한 군데다.
+   * 이름이 어긋나면 이 표만 고치면 된다(화면 코드는 provider 메서드 이름만 쓴다).
+   */
+  var SERVER_FN = {
+    getBootstrap: 'getBootstrap',
+    saveAssignments: 'saveAssignments',
+    completeMilestone: 'completeMilestone',
+    createStandardMilestones: 'createStandardMilestones',
+    saveRow: 'saveRow',
+    deleteRow: 'deleteRow',
+    saveEffortWeek: 'saveEffortWeek',
+    addItems: 'addItems',
+    bulkMilestone: 'bulkMilestone',       // 6턴 C2 — (action, keys, payload, expected)
+    restoreHistory: 'restoreHistory'      // 6턴 C3 — (index, row, expected)
+  };
 
   function makeGasProvider() {
     function call(fnName, args) {
@@ -530,15 +711,25 @@
     }
     return {
       mode: 'gas',
-      getBootstrap: function () { return call('getBootstrap', []); },
-      saveAssignments: function (projectId, rows) { return call('saveAssignments', [projectId, rows]); },
-      completeMilestone: function (projectId, name, date) { return call('completeMilestone', [projectId, name, date]); },
-      createStandardMilestones: function (projectId) { return call('createStandardMilestones', [projectId]); },
-      saveRow: function (table, row, expected, options) { return call('saveRow', [table, row, expected || null, options || {}]); },
-      deleteRow: function (table, key) { return call('deleteRow', [table, key]); },
-      saveEffortWeek: function (member, week, rows, expected) { return call('saveEffortWeek', [member, week, rows, expected || null]); },
+      getBootstrap: function () { return call(SERVER_FN.getBootstrap, []); },
+      saveAssignments: function (projectId, rows) { return call(SERVER_FN.saveAssignments, [projectId, rows]); },
+      completeMilestone: function (projectId, name, date) { return call(SERVER_FN.completeMilestone, [projectId, name, date]); },
+      createStandardMilestones: function (projectId) { return call(SERVER_FN.createStandardMilestones, [projectId]); },
+      saveRow: function (table, row, expected, options) { return call(SERVER_FN.saveRow, [table, row, expected || null, options || {}]); },
+      deleteRow: function (table, key) { return call(SERVER_FN.deleteRow, [table, key]); },
+      saveEffortWeek: function (member, week, rows, expected) { return call(SERVER_FN.saveEffortWeek, [member, week, rows, expected || null]); },
       /* 5턴: 카탈로그 블럭 일괄 추가(브리프 §3) */
-      addItems: function (projectId, milestone, part, blockNames) { return call('addItems', [projectId, milestone, part, blockNames || []]); }
+      addItems: function (projectId, milestone, part, blockNames) { return call(SERVER_FN.addItems, [projectId, milestone, part, blockNames || []]); },
+      /* 6턴 C2: 지연 마일스톤 일괄 처리 — req = { action:'complete'|'shift', keys:['projectId|이름'…], payload:{done}|{days|due}, expected:[행…] } */
+      bulkMilestone: function (req) {
+        var r = req || {};
+        return call(SERVER_FN.bulkMilestone, [r.action, r.keys || [], r.payload || {}, r.expected || null]);
+      },
+      /* 6턴 C3: 변경이력 되돌리기 — req = { index, row(시트 행 번호·대조용), expected(그 이력 한 줄) } */
+      restoreHistory: function (req) {
+        var r = req || {};
+        return call(SERVER_FN.restoreHistory, [r.index, (r.row === undefined ? null : r.row), r.expected || null]);
+      }
     };
   }
 
@@ -575,7 +766,10 @@
     notesOpen: {},            // 5턴: 펼친 주석 스레드 { '<itemId>' | 'ms:<projectId>|<milestone>': true }
     part: '',                 // 5턴: 파트 필터(빈 값 = 전체) — localStorage 'tb.part'
     blockPicker: null,        // 5턴: 블럭 추가 창 { projectId, milestone, part, checked:{block:true} }
-    overlaps: {}              // 5턴: 서버 응답의 overlaps 보관 { projectId: [{member, role, itemsMd, manualMd}] }
+    overlaps: {},             // 5턴: 서버 응답의 overlaps 보관 { projectId: [{member, role, itemsMd, manualMd}] }
+    myWeek: null,             // 6턴 C1: 내 주간 공수 { member, week, rows:[…], expected, error }
+    bulk: null,               // 6턴 C2: 지연 마일스톤 일괄 처리 { keys:{}, mode:''|'complete'|'shift', done, days, due, error }
+    assignGuard: null         // 6턴 C3: 배정 저장 가드 경고 { removed, removedRows, added, changed }
   };
   var provider = null;
 
@@ -740,6 +934,22 @@
       '기준일 <strong class="num">' + esc(state.today) + '</strong> · 데이터 갱신 <span class="num">' + esc(gen) +
       '</span> · ' + esc(modeLabel) + (meta.user ? ' · ' + esc(meta.user) : '');
     var link = el('sheet-link');
+    // 6턴 C1: 머리말 바로가기 — 어느 화면에서도 "내 주간 공수" 카드로 바로 간다
+    if (!el('my-week-link') && link && link.parentNode) {
+      var mb = document.createElement('button');
+      mb.type = 'button';
+      mb.id = 'my-week-link';
+      mb.className = 'tb-sheet-link tb-my-week-link';
+      mb.setAttribute('data-action', 'my-week');
+      mb.title = '이번 주(또는 지난주) 내가 어디에 며칠 썼는지 적는 카드로 갑니다.';
+      mb.textContent = '내 주간 공수';
+      link.parentNode.insertBefore(mb, link);
+    }
+    var myBadge = el('my-week-link');
+    if (myBadge) {
+      var mw = myWeekState();
+      myBadge.classList.toggle('is-todo', !!(mw.member && !myWeekLogged(mw.member, mw.week)));
+    }
     // 4턴: 새로고침 버튼 — 뼈대(index.template.html)는 그대로 두고 시트 열기 링크 앞에 끼워 넣는다
     if (!el('refresh-data') && link && link.parentNode) {
       var rb = document.createElement('button');
@@ -1374,16 +1584,43 @@
       '<th style="min-width:140px">비고</th><th></th></tr></thead><tbody>' +
       (rows || '<tr><td colspan="8" class="cap">배정 행이 없습니다. [행 추가]를 눌러 시작하세요.</td></tr>') +
       '</tbody></table></div>' +
+      assignGuardBox() +
       '<div class="tb-toolbar">' +
       '<button type="button" class="btn btn-secondary btn-sm" data-action="add-row"' + (state.saving ? ' disabled' : '') + '>행 추가</button>' +
-      '<button type="button" class="btn btn-primary" data-action="save-assignments"' + (state.saving ? ' disabled' : '') + '>' +
+      '<button type="button" class="btn btn-primary" data-action="save-assignments"' + ((state.saving || guardOpen()) ? ' disabled' : '') + '>' +
       (state.saving ? '저장 중…' : '저장') + '</button>' +
       '<span class="save-state" id="save-state">' + (state.saving ? '저장 중…' : '') + '</span>' +
       '</div></div>';
   }
 
+  /* ---- 6턴 C3: 배정 저장 가드 — 사라지는 행이 있으면 경고 + 2단계 확인 ---- */
+
+  function guardOpen() {
+    return !!(state.assignGuard && state.assignGuard.projectId === state.editProject);
+  }
+  /** 저장으로 사라질 행을 이름·역할·M/D·기간까지 적어 보여 준다(Schema.assignmentSaveGuard 결과 그대로) */
+  function assignGuardBox() {
+    if (!guardOpen()) { return ''; }
+    var g = state.assignGuard;
+    return '<div class="tb-form-warn tb-guard" role="alert" data-assign-guard="' + esc(g.projectId) + '">' +
+      '<strong>저장하면 배정 ' + g.removed + '행이 사라집니다. 맞는지 확인하세요.</strong>' +
+      '<ul>' + g.removedRows.map(function (r) {
+        return '<li><strong>' + esc(r.member || '(팀원 없음)') + '</strong> · ' + esc(r.role || '(역할 없음)') +
+          ' · <span class="num">' + fmtMd(Number(r.plannedMd)) + ' M/D</span>' +
+          ' · <span class="num">' + esc(r.start || '') + ' ~ ' + esc(r.end || '') + '</span></li>';
+      }).join('') + '</ul>' +
+      '<div class="cap">함께 저장되는 행: 새로 추가 ' + g.added + '행 · 내용 변경 ' + g.changed + '행. ' +
+      '사라진 행은 시트 [변경이력] 탭에 백업으로 남고, E 화면 "최근 변경"에서 되돌릴 수 있습니다.</div>' +
+      '<div class="tb-toolbar" style="margin-top:6px">' +
+      '<button type="button" class="btn btn-primary btn-sm" data-action="assign-guard-yes"' + (state.saving ? ' disabled' : '') + '>계속 저장</button>' +
+      '<button type="button" class="btn btn-ghost btn-sm" data-action="assign-guard-no"' + (state.saving ? ' disabled' : '') +
+      ' title="저장하지 않고 편집을 열기 전 상태로 되돌립니다">취소(편집 되돌리기)</button>' +
+      '</div></div>';
+  }
+
   function loadEditRows(projectId) {
     state.editProject = projectId;
+    state.assignGuard = null;
     state.editRows = (state.data.assignments || [])
       .filter(function (a) { return a.projectId === projectId; })
       .map(function (a) {
@@ -1403,6 +1640,7 @@
     var host = el('screen-C');
     var month = M.monthKey(state.today);
     host.innerHTML =
+      myWeekCard() +
       effortEditor() +
       '<div class="tb-card"><h3>프로젝트별 계획 대 실투입</h3>' +
       '<div class="tb-card-desc">막대를 누르면 아래에 그 프로젝트의 주차별 투입 추이가 열립니다.</div>' +
@@ -1765,12 +2003,74 @@
       (name ? ' data-name="' + esc(name) + '"' : '') + (state.saving ? ' disabled' : '') + '>' + esc(label) + '</button>';
   }
 
-  function warnSection(key, title, badge, items, emptyMsg) {
+  function warnSection(key, title, badge, items, emptyMsg, head, foot) {
     return '<section class="tb-card" data-warning="' + key + '">' +
       '<div class="tb-warn-head"><h3>' + esc(title) + '</h3>' +
-      '<span class="badge ' + badge + '">' + items.length + '건</span></div>' +
+      '<span class="badge ' + badge + '">' + items.length + '건</span>' + (head || '') + '</div>' +
       (items.length ? '<ul class="tb-warn-list">' + items.join('') + '</ul>' : '<div class="cap">' + esc(emptyMsg) + '</div>') +
+      (foot || '') +
       '</section>';
+  }
+
+  /* ---- 6턴 C2: 지연 마일스톤 일괄 처리 ---- */
+
+  function bulkState() {
+    if (!state.bulk) { state.bulk = { keys: {}, mode: '', done: '', days: '7', due: '', error: null }; }
+    if (!state.bulk.done) { state.bulk.done = state.today; }
+    return state.bulk;
+  }
+  /** 고른 키 중 지금도 목록에 있는 것만 — 목록이 바뀌면 선택도 따라 정리된다 */
+  function bulkKeys(validKeys) {
+    var b = bulkState();
+    var ok = {};
+    (validKeys || []).forEach(function (k) { ok[k] = true; });
+    return Object.keys(b.keys).filter(function (k) { return b.keys[k] && ok[k]; });
+  }
+  function bulkRows(keys) {
+    return keys.map(function (k) {
+      var idx = S.findRow('milestones', state.data.milestones || [], parseKey('milestones', k));
+      return idx >= 0 ? state.data.milestones[idx] : null;
+    }).filter(Boolean);
+  }
+  function bulkPayload(b) {
+    if (b.mode === 'complete') { return { done: str(b.done) || state.today }; }
+    return str(b.due) ? { due: str(b.due) } : { days: str(b.days) };
+  }
+  /** 선택 목록 아래 액션 바 — 2단계 인라인 확인(브라우저 대화상자 미사용) */
+  function bulkBar(keys) {
+    var b = bulkState();
+    if (!keys.length) { return ''; }
+    var rows = bulkRows(keys);
+    var word = b.mode === 'complete' ? '완료 처리' : '예정일 조정';
+    var panel = '';
+    if (b.mode) {
+      var v = S.validateBulkMilestone(b.mode, rows, bulkPayload(b), { settings: state.data.settings, data: state.data });
+      var preview = v.values.slice(0, 3).map(function (r, i) {
+        var was = rows[i] || {};
+        return esc(r.name) + ': ' + (b.mode === 'complete'
+          ? '완료일 ' + esc(str(was.done) || '(빈 값)') + ' → ' + esc(str(r.done) || '(빈 값)')
+          : '예정일 ' + esc(str(was.due)) + ' → ' + esc(str(r.due)));
+      }).join(' · ') + (v.values.length > 3 ? ' 외 ' + (v.values.length - 3) + '건' : '');
+      var errors = v.ok ? '' : '<div class="tb-form-error" role="alert"><strong>처리할 수 없습니다</strong><ul>' +
+        v.errors.map(function (x) { return '<li>' + esc(x.label + ': ' + x.message) + '</li>'; }).join('') + '</ul></div>';
+      var warns = (v.warnings || []).map(function (x) { return '<div class="tb-form-warn">' + esc(x) + '</div>'; }).join('');
+      panel = '<div class="tb-bulk-panel" data-bulk-panel="' + esc(b.mode) + '">' +
+        (b.mode === 'complete'
+          ? '<label class="tb-field"><span>완료일</span><input type="date" id="bulk-done" value="' + esc(str(b.done) || state.today) + '"' + (state.saving ? ' disabled' : '') + '></label>'
+          : '<label class="tb-field"><span>며칠 미루기</span><input type="number" step="1" id="bulk-days" value="' + esc(b.days) + '"' + (state.saving ? ' disabled' : '') + '></label>' +
+            '<label class="tb-field"><span>또는 새 예정일</span><input type="date" id="bulk-due" value="' + esc(b.due) + '"' + (state.saving ? ' disabled' : '') + '></label>') +
+        (v.ok ? confirmable('bulk-run', b.mode, '', keys.length + '건 ' + word, 'btn btn-primary btn-sm') : '') +
+        '<button type="button" class="btn btn-ghost btn-sm" data-action="bulk-cancel"' + (state.saving ? ' disabled' : '') + '>그만두기</button>' +
+        '<div class="cap" data-bulk-preview>' + (v.ok ? preview : '') + '</div>' + warns + errors +
+        '</div>';
+    }
+    return '<div class="tb-bulk-bar" data-bulk-bar>' +
+      '<strong class="num" data-bulk-count>' + keys.length + '건 선택됨</strong>' +
+      '<button type="button" class="btn btn-secondary btn-sm' + (b.mode === 'complete' ? ' is-on' : '') + '" data-action="bulk-mode" data-mode="complete"' + (state.saving ? ' disabled' : '') + '>완료 처리</button>' +
+      '<button type="button" class="btn btn-secondary btn-sm' + (b.mode === 'shift' ? ' is-on' : '') + '" data-action="bulk-mode" data-mode="shift"' + (state.saving ? ' disabled' : '') + '>예정일 조정</button>' +
+      '<button type="button" class="btn btn-ghost btn-sm" data-action="bulk-clear"' + (state.saving ? ' disabled' : '') + '>선택 해제</button>' +
+      '<span class="save-state" id="bulk-state">' + (state.saving ? '저장 중…' : '') + '</span>' +
+      panel + '</div>';
   }
 
   function renderScreenE(view) {
@@ -1791,13 +2091,25 @@
           confirmable('complete-milestone', m.projectId, m.name, '완료 처리', 'btn btn-secondary btn-sm') + '</li>';
       });
 
+    // 6턴 C2: 지연 목록은 다중 선택 → 하단 액션 바에서 한 번에 완료 처리·예정일 조정
+    var bulkAll = [];
     var delayed = w.delayed.sort(function (a, b) { return b.daysLate - a.daysLate; }).map(function (d) {
-      return '<li data-item><span class="grow"><strong>' + esc(d.name) + '</strong>' +
+      var bk = keyStrOf('milestones', { projectId: d.projectId, name: d.name });
+      bulkAll.push(bk);
+      var on = !!bulkState().keys[bk];
+      return '<li data-item data-bulk-row="' + esc(bk) + '"' + (on ? ' class="is-picked"' : '') + '>' +
+        '<label class="tb-bulk-pick" title="일괄 처리에 넣습니다"><input type="checkbox" data-action="bulk-toggle" data-key="' + esc(bk) + '"' +
+        (on ? ' checked' : '') + (state.saving ? ' disabled' : '') + ' aria-label="' + esc(d.name + ' 선택') + '"></label>' +
+        '<span class="grow"><strong>' + esc(d.name) + '</strong>' +
         '<span class="w-sub"> · ' + esc(projectName(d.projectId)) + '</span><br>' +
         '<span class="w-sub num">예정 ' + esc(d.due) + ' · ' + d.daysLate + '일 지연' + (d.owner ? ' · ' + esc(d.owner) : '') + '</span></span>' +
         '<button type="button" class="btn btn-ghost btn-sm" data-goto="A" data-project="' + esc(d.projectId) + '">보기</button>' +
         confirmable('complete-milestone', d.projectId, d.name, '완료 처리', 'btn btn-secondary btn-sm') + '</li>';
     });
+    var picked = bulkKeys(bulkAll);
+    var bulkHead = bulkAll.length
+      ? '<button type="button" class="btn btn-ghost btn-sm" data-action="bulk-all"' + (state.saving ? ' disabled' : '') + '>' +
+        (picked.length === bulkAll.length ? '선택 해제' : '전체 선택') + '</button>' : '';
 
     var missing = wAll.missingLog.map(function (m) {
       return '<li data-item><span class="grow"><strong>' + esc(m.member) + '</strong><br>' +
@@ -1860,7 +2172,7 @@
     host.innerHTML =
       '<div class="tb-warn-grid">' +
       warnSection('upcoming', '2주 내 마일스톤', 'badge-active', upcoming, '앞으로 2주 안에 예정된 마일스톤이 없습니다.') +
-      warnSection('delayed', '지연 마일스톤', 'badge-late', delayed, '지연된 마일스톤이 없습니다.') +
+      warnSection('delayed', '지연 마일스톤', 'badge-late', delayed, '지연된 마일스톤이 없습니다.', bulkHead, bulkBar(picked)) +
       warnSection('missingLog', '주간 기록 미제출', 'badge-warn', missing, '모든 팀원이 기준 주차까지 기록했습니다.') +
       warnSection('unassigned', '미배정 프로젝트', 'badge-warn', unassigned, '배정이 비어 있는 프로젝트가 없습니다.') +
       warnSection('overload', '과부하 팀원', 'badge-late', overload, '앞으로 6개월 안에 과부하 예정인 팀원이 없습니다.') +
@@ -2124,6 +2436,138 @@
       '<div class="tb-toolbar" style="margin:0">' +
       '<label class="tb-field"><span>팀원</span><select id="effort-member"' + (state.saving ? ' disabled' : '') + '>' + memberOpts + '</select></label>' +
       '<label class="tb-field"><span>주차(월요일)</span><select id="effort-week"' + (state.saving ? ' disabled' : '') + '>' + weekOpts + '</select></label>' +
+      '</div>' + body + '</div>';
+  }
+
+  /* ================================================================
+   * 10c. 6턴 C1 — 내 주간 공수 (C 화면 최상단 카드 · 머리말 바로가기)
+   * ================================================================ */
+
+  var MY_MEMBER_KEY = 'tb.myMember';
+
+  /** 로그인 계정으로 정해진 내 이름. 서버가 못 채웠으면 이메일로 한 번 더 찾아본다. 없으면 '' */
+  function fixedMyMember() {
+    var meta = (state.data && state.data.meta) || {};
+    var name = str(meta.userMember);
+    if (name && (state.data.members || []).some(function (m) { return str(m.name) === name; })) { return name; }
+    try { return S.matchMember(meta.user, state.data.members); } catch (e) { return ''; }
+  }
+  function storedMyMember() {
+    try { return String(window.localStorage.getItem(MY_MEMBER_KEY) || ''); } catch (e) { return ''; }
+  }
+  function rememberMyMember(name) {
+    try { window.localStorage.setItem(MY_MEMBER_KEY, name); } catch (e) { /* 저장 불가 환경이면 무시 */ }
+  }
+  /** 카드가 쓸 { member, week } — 아직 안 열었으면 기본값(내 이름 · 기준 주차) */
+  function myWeekState() {
+    if (state.myWeek) { return state.myWeek; }
+    var fixed = fixedMyMember();
+    var name = fixed || storedMyMember();
+    if (name && !(state.data.members || []).some(function (m) { return str(m.name) === name; })) { name = ''; }
+    return { member: name, week: M.baseWeek(state.data, state.today), rows: [], expected: null, error: null };
+  }
+  function myWeekLogged(member, week) {
+    if (!member || !week) { return false; }
+    return (state.data.effortLogs || []).some(function (l) { return str(l.member) === str(member) && M.mondayOf(l.week) === week; });
+  }
+  /** 그 팀원·주차의 행을 계약(Schema.weekEffortRows)대로 다시 만든다 — 배정·공통코드·이미 기록된 행 */
+  function loadMyWeek(member, week) {
+    var m = str(member);
+    var w = str(week) || M.baseWeek(state.data, state.today);
+    var rows = m ? S.weekEffortRows(m, w, state.data) : [];
+    state.myWeek = {
+      member: m, week: w,
+      rows: rows.map(function (r) {
+        return {
+          projectId: r.projectId, label: r.label,
+          md: (r.md === null || r.md === undefined) ? '' : r.md,
+          memo: r.memo || '', source: r.source, logged: !!r.logged
+        };
+      }),
+      expected: clone((state.data.effortLogs || []).filter(function (l) { return str(l.member) === m && M.mondayOf(l.week) === w; })),
+      error: null
+    };
+    return state.myWeek;
+  }
+  function sourceChip(source) {
+    var s2 = str(source) || '배정';
+    var title = {
+      '배정': '이 주에 걸쳐 배정된 프로젝트입니다',
+      '공통': '내부 업무·영업 활동·휴가 같은 공통 항목입니다',
+      '기록': '이미 기록해 둔 행입니다',
+      '지난주': '지난주 값을 복사해 온 행입니다',
+      '추가': '직접 고른 행입니다'
+    }[s2] || '';
+    return '<span class="tb-chip-src is-' + esc(s2) + '" title="' + esc(title) + '">' + esc(s2) + '</span>';
+  }
+
+  function myWeekCard() {
+    var e = state.myWeek || loadMyWeek(myWeekState().member, myWeekState().week);
+    var fixed = fixedMyMember();
+    var weekOpts = optionList(effortWeeks(), e.week, false);
+    var memberControl;
+    if (fixed) {
+      memberControl = '<span class="tb-my-member" data-my-member="' + esc(fixed) + '">내 기록: <strong>' + esc(fixed) + '</strong></span>' +
+        '<span class="cap">로그인 계정으로 자동 인식했습니다.</span>';
+    } else {
+      var picks = (state.data.members || []).filter(function (m) { return m.status !== '퇴사'; })
+        .map(function (m) { return { value: m.name, label: m.name + (m.role ? ' · ' + m.role : '') }; });
+      memberControl = '<label class="tb-field"><span>내 이름</span><select id="my-member"' + (state.saving ? ' disabled' : '') + '>' +
+        optionList(picks, e.member, true, '이름 선택') + '</select></label>' +
+        '<span class="cap">팀원 탭에 이메일이 없어 이름으로 고릅니다. 고른 이름은 이 브라우저에 기억됩니다.</span>';
+    }
+
+    var body;
+    if (!e.member) {
+      body = '<div class="tb-empty" style="margin-top:10px">내 이름을 고르면 그 주에 적을 행이 자동으로 나옵니다.</div>';
+    } else {
+      var codes = projectCodeOptions();
+      var rows = e.rows.map(function (r, i) {
+        var nameCell = (str(r.source) === '추가')
+          ? '<select data-my-row="' + i + '" data-field="projectId"' + (state.saving ? ' disabled' : '') + '>' + optionList(codes, r.projectId || '', true, '선택') + '</select>'
+          : '<span class="my-name">' + esc(r.label) + '</span> <span class="cap num">' + esc(r.projectId) + '</span>';
+        return '<tr class="tb-edit-row" data-my-item="' + esc(r.projectId || ('새행' + i)) + '" data-my-source="' + esc(r.source) + '">' +
+          '<td>' + nameCell + '</td>' +
+          '<td>' + sourceChip(r.source) + '</td>' +
+          '<td><input type="number" step="0.5" min="0" data-my-row="' + i + '" data-field="md" value="' + esc(r.md) + '"' + (state.saving ? ' disabled' : '') + '></td>' +
+          '<td><input type="text" data-my-row="' + i + '" data-field="memo" value="' + esc(r.memo) + '" maxlength="120"' + (state.saving ? ' disabled' : '') + '></td>' +
+          '<td><button type="button" class="btn btn-ghost btn-sm" data-action="my-remove-row" data-index="' + i + '"' + (state.saving ? ' disabled' : '') + '>제거</button></td>' +
+          '</tr>';
+      }).join('');
+      var filled = e.rows.filter(function (r) { return str(r.projectId) !== '' && str(r.md) !== ''; });
+      var check = S.validateEffortWeek(e.member, e.week, filled, { settings: state.data.settings, data: state.data });
+      var warn = (check.warnings || []).map(function (w) { return '<div class="tb-form-warn" data-my-warn>' + esc(w) + '</div>'; }).join('');
+      var error = (e.error && e.error.length)
+        ? '<div class="tb-form-error" role="alert"><strong>저장하지 못했습니다</strong><ul>' +
+          e.error.map(function (m) { return '<li>' + esc(m) + '</li>'; }).join('') + '</ul></div>' : '';
+      var capacity = M.settingsOf(state.data).capacityMdPerMonth || 20;   // D12 — 화면 합계에 M/M 병기
+      var mm = check.total / capacity;
+      body =
+        '<div class="tb-scroll" style="margin-top:10px"><table class="tb-table"><thead><tr>' +
+        '<th style="min-width:220px">프로젝트 · 공통 항목</th><th style="min-width:64px">출처</th>' +
+        '<th style="min-width:110px">실투입 공수(0.5 단위)</th><th style="min-width:200px">메모(한 줄)</th><th></th>' +
+        '</tr></thead><tbody>' +
+        (rows || '<tr><td colspan="5" class="cap">이 주에 걸친 배정이 없습니다. [행 추가]로 골라 넣으세요.</td></tr>') +
+        '</tbody></table></div>' +
+        '<div class="tb-toolbar"><span class="cap num" id="my-total">합계 ' + fmtMd(check.total || 0) + ' M/D · ' + filled.length + '행 기록' +
+        '</span><span class="cap num">' + esc(fmtMd(mm) + ' M/M(월 가용 ' + fmtMd(capacity) + ' M/D 기준)') + '</span></div>' +
+        warn + error +
+        '<div class="tb-toolbar">' +
+        '<button type="button" class="btn btn-secondary btn-sm" data-action="my-copy-prev"' + (state.saving ? ' disabled' : '') +
+        ' title="같은 팀원의 직전 주차 기록을 아래 입력칸에 채웁니다. 저장은 따로 누릅니다.">지난주 값 복사</button>' +
+        '<button type="button" class="btn btn-secondary btn-sm" data-action="my-add-row"' + (state.saving ? ' disabled' : '') + '>행 추가</button>' +
+        '<button type="button" class="btn btn-primary" data-action="my-save"' + (state.saving ? ' disabled' : '') + '>' + (state.saving ? '저장 중…' : '저장') + '</button>' +
+        '<span class="save-state" id="my-state">' + (state.saving ? '저장 중…' : '') + '</span>' +
+        '</div>';
+    }
+
+    var logged = myWeekLogged(e.member, e.week);
+    return '<div class="tb-card tb-my-week" id="my-week-card"><h3>내 주간 공수' +
+      '<span class="badge ' + (logged ? 'badge-done' : 'badge-warn') + '" data-my-badge>' + (logged ? '이 주 기록 있음' : '이 주 기록 없음') + '</span></h3>' +
+      '<div class="tb-card-desc">지난주(기준 주차)에 어디에 며칠을 썼는지 한 번에 적습니다. 배정된 프로젝트와 공통 항목은 미리 나와 있고, 빈 칸은 저장하지 않습니다. ' +
+      '저장하면 시트의 [공수기록] 탭에서 내 그 주 행이 통째로 교체됩니다.</div>' +
+      '<div class="tb-toolbar" style="margin:0">' + memberControl +
+      '<label class="tb-field"><span>주차(월요일)</span><select id="my-week"' + (state.saving ? ' disabled' : '') + '>' + weekOpts + '</select></label>' +
       '</div>' + body + '</div>';
   }
 

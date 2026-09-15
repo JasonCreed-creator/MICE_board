@@ -26,7 +26,7 @@
 //   프로젝트   행사 1건 = 1행. 프로젝트ID는 스크립트가 자동으로 붙인다
 //   배정       누가 어느 프로젝트에 며칠(M/D) 들어가는지의 계획. 5턴부터 비고가 "자동(세부항목)" 인 행은 세부항목 합계로 스크립트가 만든다
 //   공수기록   주 1회(월요일) 지난주 실제 투입 M/D 기록
-//   팀원       이름 · 주역할 · 월 가용 M/D · 상태 · 색상
+//   팀원       이름 · 주역할 · 월 가용 M/D · 상태 · 색상 · 이메일(6턴 추가 — 회사 업무 계정, 로그인 계정과 맞추는 용도. 선택 입력)
 //   마일스톤   프로젝트별 일정 체크포인트(상태 열은 수식이 자동 계산)
 //   세부항목   마일스톤 아래 파트별 업무 블럭(담당 · 임팩트 · 난이도 · 계획 M/D). 5턴 추가 — 없으면 첫 쓰기 때 자동 생성
 //   주석       세부 항목·마일스톤에 다는 파트별 주석(판단 근거 · 요청 · 질문 · 결정). 5턴 추가 — 없으면 첫 쓰기 때 자동 생성
@@ -67,7 +67,8 @@ const HEADERS = {
     '착수일', '정산 예정일', '베뉴', '게런티(명)', '예상 참가(명)', '계약금액(원)', '비고', '등록일'],
   '배정': ['배정ID', '프로젝트ID', '팀원', '역할', '계획 M/D', '배정 시작', '배정 종료', '상태', '비고'],
   '공수기록': ['주차', '팀원', '프로젝트ID', '실투입 M/D', '메모', '기록일시'],
-  '팀원': ['이름', '주역할', '월 가용 M/D', '상태', '색상'],
+  // 6턴 D17 · 이메일(F)은 선택 입력 — 로그인 계정 ↔ 팀원 자동 매칭용 회사 업무 계정. 개인 휴대폰·개인 메일은 넣지 않는다
+  '팀원': ['이름', '주역할', '월 가용 M/D', '상태', '색상', '이메일'],
   '마일스톤': ['프로젝트ID', '마일스톤', '예정일', '완료일', '담당', '상태', '행사명(자동)'],
   '정산': ['프로젝트ID', '매출(원)', '직접비 집행(원)', '실마진(원)', '실마진율', '사전 등록(명)',
     '현장 참석(명)', '쇼업률', '게런티 달성률', '정산 상태'],
@@ -412,8 +413,10 @@ function ensureHistorySheet_() {
   return sheet;
 }
 
-// 이력 한 줄 추가: [일시 'YYYY-MM-DD HH:mm:ss', 사용자, 탭, 키, 동작(추가/수정/삭제/저장), 변경 내용, 이전 행 JSON]
+// 이력 한 줄 추가: [일시 'YYYY-MM-DD HH:mm:ss', 사용자, 탭, 키, 동작(추가/수정/삭제/저장/되돌림), 변경 내용, 이전 행 JSON]
 // backupObj 가 null 이면 G열은 빈 칸. 셀 글자 수 한도(5만 자)를 넘는 백업은 잘라서 넣는다.
+// 반환(6턴) = 방금 쓴 이력 항목 { at, user, sheet, key, action, summary, row, backup } — 대시보드 응답에 실어
+//   화면이 "최근 변경" 목록 맨 앞에 그대로 끼워 넣고 [되돌리기] 까지 바로 쓸 수 있게 한다. 기록에 실패하면 null.
 function logHistory_(sheetLabel, keyLabel, action, summary, backupObj) {
   try {
     const sheet = ensureHistorySheet_();
@@ -424,10 +427,27 @@ function logHistory_(sheetLabel, keyLabel, action, summary, backupObj) {
       try { backup = JSON.stringify(backupObj); } catch (e) { backup = String(backupObj); }
       if (backup.length > 49000) backup = backup.slice(0, 48900) + ' …(길어서 잘림)';
     }
-    sheet.appendRow([at, userEmail_(), txt(sheetLabel), txt(keyLabel), txt(action), txt(summary), backup]);
+    const user = userEmail_();
+    sheet.appendRow([at, user, txt(sheetLabel), txt(keyLabel), txt(action), txt(summary), backup]);
+    return {
+      at: at, user: user, sheet: txt(sheetLabel), key: txt(keyLabel), action: txt(action), summary: txt(summary),
+      row: sheet.getLastRow(),                 // 되돌리기가 이 행을 다시 읽어 대조한다
+      backup: parseBackupApi_(backup)          // 잘려서 못 읽으면 null → 화면은 "되돌릴 수 없음" 으로 본다
+    };
   } catch (e) {
     console.warn('변경이력 기록 실패(본 작업은 저장됨): ' + (e && e.message ? e.message : e));
+    return null;
   }
+}
+
+// 변경이력 G열(이전 행 백업) 문자열 → 값. 빈 칸은 null.
+// 읽을 수 없으면(길어서 잘린 백업 등) 통째로 보내지 않고 표시 문구만 돌려준다 —
+// Schema.restoreCheck 가 그 문구를 JSON 으로 못 읽어 "백업 내용을 읽을 수 없습니다" 로 막는다(서버·화면 판정이 같아진다).
+const BACKUP_UNREADABLE_Api_ = '(백업을 읽을 수 없음)';
+function parseBackupApi_(raw) {
+  const s = (raw === null || raw === undefined) ? '' : String(raw).trim();
+  if (s === '') return null;
+  try { return JSON.parse(s); } catch (e) { return BACKUP_UNREADABLE_Api_; }
 }
 
 // ==================== 3. 초기 설정: 탭 11개 만들기 ====================
@@ -544,11 +564,13 @@ function setupSheets(seedSample) {
   // ---------- 3-2. 팀원 ----------
   const mem = newTab(SHEETS.MEMBERS);
   if (mem) {
-    widths(mem, [110, 130, 120, 90, 100]);
+    widths(mem, [110, 130, 120, 90, 100, 200]);                              // 6턴 D17 · F 이메일
     fmt(mem, 'C2:C200', '0.0');
+    fmt(mem, 'F2:F200', '@');                                                // 이메일은 글자 그대로(자동 서식 방지)
     applyRule(mem, 'B2:B200', rangeRule(SHEETS.SETTINGS, 'C2:C50', '설정 탭 역할 목록에서 고르세요.'));
     applyRule(mem, 'D2:D200', listRule(['재직', '휴직', '퇴사', '지원']));   // 지원 = 타 팀·외부 지원 인력(배정 가능, 가동률·경고 제외)
   }
+  ensureMemberEmailColumn_(ss);      // 6턴 D17 · 4~5턴에 만든 기존 팀원 탭이면 F1 헤더만 채운다(데이터 보존)
 
   // ---------- 3-3. 프로젝트 ----------
   const prj = newTab(SHEETS.PROJECTS);
@@ -640,7 +662,7 @@ function setupSheets(seedSample) {
   if (seed) {
     if (made[SHEETS.MEMBERS]) {
       writeBlock(made[SHEETS.MEMBERS], 1, SAMPLE_DATA.members.map(function (m) {
-        return [txtCell(m.name), txtCell(m.role), numCell(m.capacityMd), txtCell(m.status), txtCell(m.color)];
+        return [txtCell(m.name), txtCell(m.role), numCell(m.capacityMd), txtCell(m.status), txtCell(m.color), txtCell(m.email)];
       }));
       seeded++;
     }
@@ -829,10 +851,12 @@ function refreshValidations() {
   if (!blocksMade) n += blocksRulesApi_(ss.getSheetByName(SHEETS.BLOCKS));
   const nameCol = ensureMilestoneNameColumn_();                          // 마일스톤 탭 G열(행사명 자동) 이 없으면 만든다
   const itemNameCol = ensureNameColumnApi_(itemsSheet, 13, 2);           // 세부항목 탭 M열(행사명 자동) 이 없으면 만든다
+  const emailCol = ensureMemberEmailColumn_(ss);                         // 6턴 D17 · 팀원 탭 F열(이메일) 헤더가 없으면 넣는다(데이터 보존)
   const message = '드롭다운 ' + n + '곳을 다시 걸었습니다.' +
     (blocksMade ? ' 업무블럭 탭을 만들고 기본 카탈로그 ' + Schema.DEFAULT_BLOCKS.length + '행을 넣었습니다(시트에서 다듬어 쓰세요).' : '') +
     (nameCol ? ' 마일스톤 탭 G열(행사명 자동)을 추가했습니다.' : '') +
     (itemNameCol ? ' 세부항목 탭 M열(행사명 자동)을 추가했습니다.' : '') +
+    (emailCol ? ' 팀원 탭 F열(이메일)을 추가했습니다 — 회사 업무 계정을 적어 두면 대시보드가 로그인한 사람을 알아봅니다(선택).' : '') +
     ' 팀원 탭 상태에서 "지원"(타 팀·외부 지원 인력)을 고를 수 있습니다.';
   try { ss.toast(message, '팀 보드', 6); } catch (e) { /* 무시 */ }
   try { SpreadsheetApp.getUi().alert('드롭다운 목록 새로고침', message, SpreadsheetApp.getUi().ButtonSet.OK); } catch (e) { /* 편집기에서 실행 */ }
@@ -868,6 +892,24 @@ function ensureNameColumnApi_(sheet, col, pidCol) {
 function ensureMilestoneNameColumn_(sheetOpt) {
   const sheet = sheetOpt || SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEETS.MILESTONES);
   return ensureNameColumnApi_(sheet, 7, 1);
+}
+
+// 6턴 D17 — `팀원` 탭 F열(이메일) 헤더 보장. 4~5턴에 만든 시트를 그대로 쓰려는 마이그레이션용이다.
+// F1 이 비어 있을 때만 헤더 한 칸을 쓴다. 이미 무언가 적혀 있으면(사람이 다른 이름을 붙였어도) 건드리지 않는다.
+// 데이터(F2 아래)는 어떤 경우에도 지우거나 덮어쓰지 않는다. 반환 = 헤더를 새로 넣었는지
+function ensureMemberEmailColumn_(ss) {
+  const book = ss || SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = book.getSheetByName(SHEETS.MEMBERS);
+  if (!sheet) return false;                                   // 탭이 없으면 setupSheets 가 만들 때 6열로 만들어진다
+  const headers = HEADERS[SHEETS.MEMBERS];
+  const col = headers.length;                                 // 6 = F
+  if (sheet.getMaxColumns() < col) sheet.insertColumnsAfter(sheet.getMaxColumns(), col - sheet.getMaxColumns());
+  const cell = sheet.getRange(1, col);
+  if (String(cell.getValue() === null || cell.getValue() === undefined ? '' : cell.getValue()).trim() !== '') return false;
+  cell.setValue(headers[col - 1]).setFontWeight('bold').setBackground(HEADER_BG_Api_);
+  try { sheet.setColumnWidth(col, 200); } catch (e) { /* 너비를 못 바꾸면 그대로 둔다 */ }
+  try { sheet.getRange(2, col, Math.max(1, sheet.getMaxRows() - 1), 1).setNumberFormat('@'); } catch (e) { /* 무시 */ }
+  return true;
 }
 
 // ==================== 4b. 5턴 탭 3개 — 서식 · 드롭다운 · 생성 헬퍼 ====================
@@ -1179,11 +1221,11 @@ function clearSampleData() {
 // 실제 팀·행사 정보가 아니며, mock/sample-data.json 과 같은 내용이다(대시보드 mock 모드와 숫자가 일치).
 const SAMPLE_DATA = {
   members: [
-    {"name":"팀원1","role":"운영 PM","capacityMd":20,"status":"재직","color":"#EB6F2A"},
-    {"name":"팀원2","role":"모객","capacityMd":20,"status":"재직","color":"#476580"},
-    {"name":"팀원3","role":"현장 운영","capacityMd":20,"status":"재직","color":"#4A463F"},
-    {"name":"팀원4","role":"디자인·제작","capacityMd":20,"status":"재직","color":"#8C867A"},
-    {"name":"팀원5","role":"정산·리포트","capacityMd":20,"status":"재직","color":"#B8431A"}
+    {"name":"팀원1","role":"운영 PM","capacityMd":20,"status":"재직","color":"#EB6F2A","email":"team1@example.com"},
+    {"name":"팀원2","role":"모객","capacityMd":20,"status":"재직","color":"#476580","email":"team2@example.com"},
+    {"name":"팀원3","role":"현장 운영","capacityMd":20,"status":"재직","color":"#4A463F","email":""},
+    {"name":"팀원4","role":"디자인·제작","capacityMd":20,"status":"재직","color":"#8C867A","email":"team4@example.com"},
+    {"name":"팀원5","role":"정산·리포트","capacityMd":20,"status":"재직","color":"#B8431A","email":""}
   ],
   projects: [
     {"id":"P-2026-001","name":"가상 테크 컨퍼런스 2026","client":"가상 에이 주식회사","type":"① 리멤버 MICE 솔루션","status":"완료","pm":"팀원1","eventStart":"2026-09-03","eventEnd":"2026-09-04","kickoff":"","settlementDue":"2026-10-05","venue":"가상 컨벤션센터 A홀","guarantee":300,"expectedAttendees":350,"contractAmount":68000000,"note":"행사 종료 · 정산 마감","createdAt":"2026-05-28"},
@@ -2579,7 +2621,7 @@ const HISTORY_LIMIT_Api_ = 30;
 
 // HEADERS 가 예상과 다른 형태일 때를 대비한 열 개수 예비값 (계약 §3.1~3.7)
 const COL_COUNT_Api_ = {
-  '프로젝트': 16, '배정': 9, '공수기록': 6, '팀원': 5, '마일스톤': 7, '정산': 10, '설정': 12,
+  '프로젝트': 16, '배정': 9, '공수기록': 6, '팀원': 6, '마일스톤': 7, '정산': 10, '설정': 12,
   '세부항목': 13, '주석': 11, '업무블럭': 8
 };
 
@@ -2592,7 +2634,7 @@ const COL_Api_ = {
   },
   assignment: { id: 0, projectId: 1, member: 2, role: 3, plannedMd: 4, start: 5, end: 6, status: 7, note: 8 },
   log: { week: 0, member: 1, projectId: 2, md: 3, memo: 4, loggedAt: 5 },
-  member: { name: 0, role: 1, capacityMd: 2, status: 3, color: 4 },
+  member: { name: 0, role: 1, capacityMd: 2, status: 3, color: 4, email: 5 /* 6턴 D17 */ },
   milestone: { projectId: 0, name: 1, due: 2, done: 3, owner: 4, status: 5 /* F열 [자동] — 읽지 않고, 생성 시 비어 있을 때만 수식을 넣는다 */ },
   settlement: { projectId: 0, revenue: 1, directCost: 2, preReg: 5, attended: 6, status: 9 /* D·E·H·I [자동] 읽지 않음 */ },
   // 5턴 (Schema.TABLES.items · notes · blocks 의 col 과 같다)
@@ -2621,6 +2663,7 @@ function getBootstrap() {
     .forEach(function (name) { getSheet_(name); });
 
   const all = readAllApi_();
+  const email = userEmail_();                  // 4턴 meta.user · 6턴 meta.userMember 가 함께 쓴다
 
   const data = {
     meta: {
@@ -2628,8 +2671,11 @@ function getBootstrap() {
       mode: 'gas',
       sheetUrl: ss.getUrl(),
       today: todayStr_(),
-      user: userEmail_(),                      // 4턴 · 계약 §2.1 — 이력 표시용. 못 읽으면 ''
-      blocksSource: all.blocksSource           // 5턴 · 'sheet'(업무블럭 탭) | 'default'(코드의 기본 카탈로그)
+      user: email,                             // 4턴 · 계약 §2.1 — 이력 표시용. 못 읽으면 ''
+      // 6턴 D18 · 로그인 계정 ↔ 팀원 이름. 팀원 탭 이메일 열에서 찾는다(퇴사 제외). 못 찾으면 '' → 화면이 이름 선택으로 넘어간다
+      userMember: Schema.matchMember(email, all.members),
+      blocksSource: all.blocksSource,          // 5턴 · 'sheet'(업무블럭 탭) | 'default'(코드의 기본 카탈로그) · 6턴 파생이 섞이면 '+derived'
+      derivedParts: all.derivedParts           // 6턴 D22 · 공통 블럭으로 채운 파트 이름 배열(없으면 [])
     },
     settings: all.settings,
     members: all.members,
@@ -2677,9 +2723,9 @@ function saveAssignments(projectId, rows) {
     const summary = saved.length > 0
       ? saved.map(function (a) { return a.member + ' ' + a.role + ' ' + a.plannedMd + ' ' + a.start + '~' + a.end; }).join('\n')
       : '(배정 없음 — 이 프로젝트의 배정 행을 모두 제거)';
-    logHistory_(SHEETS.ASSIGNMENTS, pid, '저장', summary, w.replaced);
+    const hist = logHistory_(SHEETS.ASSIGNMENTS, pid, '저장', summary, w.replaced);
 
-    result = { ok: true, projectId: pid, assignments: saved };
+    result = { ok: true, projectId: pid, assignments: saved, history: hist };
   });
   return finalizeApi_(result, 'saveAssignments');
 }
@@ -2761,9 +2807,9 @@ function completeMilestone(projectId, name, date) {
     const before = milestoneFromRowApi_(hit.values);
     sheet.getRange(hit.row, COL_Api_.milestone.done + 1).setValue(parseDate_(done) || done);
     SpreadsheetApp.flush();
-    logHistory_(SHEETS.MILESTONES, pid + ' · ' + mname, '수정',
+    const hist = logHistory_(SHEETS.MILESTONES, pid + ' · ' + mname, '수정',
       '완료일: ' + (before.done || '(빈 값)') + ' → ' + done, before);
-    result = { ok: true, projectId: pid, name: mname, done: done };
+    result = { ok: true, projectId: pid, name: mname, done: done, history: hist };
   });
   return finalizeApi_(result, 'completeMilestone');
 }
@@ -2841,10 +2887,10 @@ function createStandardMilestonesApi_(pid, settingsOpt) {
     SpreadsheetApp.flush();
   }
 
-  logHistory_(SHEETS.MILESTONES, pid, '추가',
+  const hist = logHistory_(SHEETS.MILESTONES, pid, '추가',
     '표준 마일스톤 ' + created.length + '건 생성(건너뜀 ' + skipped.length + ')', null);
 
-  return { ok: true, projectId: pid, created: created, skipped: skipped };
+  return { ok: true, projectId: pid, created: created, skipped: skipped, history: hist };
 }
 
 // ---------- 쓰기 4: 행 단위 추가·수정 (4턴 · 화면 A·B·C·D 폼 · 브리프 §3 / 5턴 items·notes 확장 · 브리프 T5 §3) ----------
@@ -2925,8 +2971,13 @@ function saveRow(table, row, expected, options) {
         result.renamed = rn;
         if (rn.items + rn.notes > 0) extraEdit = '마일스톤 이름 변경에 따라 세부항목 ' + rn.items + '건 · 주석 ' + rn.notes + '건의 마일스톤 열을 함께 바꿈';
       }
-      logHistory_(def.sheet, Schema.keyLabel(t, saved), '수정', Schema.summarize(t, '수정', current, saved, extraEdit), current);
+      result.history = logHistory_(def.sheet, Schema.keyLabel(t, saved), '수정', Schema.summarize(t, '수정', current, saved, extraEdit), current);
       if (t === 'items') attachSyncApi_(result, saved.projectId);
+      // 6턴 A3 — 마일스톤 예정일이 바뀌면 그 프로젝트의 자동 배정 기간(세부항목 합계 행)이 낡는다 → 이어서 재동기화
+      if (t === 'milestones' && current.due !== saved.due &&
+          data.projects.some(function (p) { return p.id === saved.projectId; })) {
+        attachSyncApi_(result, saved.projectId);
+      }
       return;
     }
 
@@ -2957,11 +3008,12 @@ function saveRow(table, row, expected, options) {
       result.firstNote = note;
       extra = '첫 주석 ' + note.id + ' 추가(요청)';
     }
-    logHistory_(def.sheet, Schema.keyLabel(t, savedNew), '추가', Schema.summarize(t, '추가', null, savedNew, extra), null);
+    result.history = logHistory_(def.sheet, Schema.keyLabel(t, savedNew), '추가', Schema.summarize(t, '추가', null, savedNew, extra), null);
 
     if (t === 'projects' && opts.createStandardMilestones) {
       const ms = createStandardMilestonesApi_(savedNew.id, data.settings);
       result.milestones = { created: ms.created, skipped: ms.skipped };
+      if (ms.history) result.historyExtra = (result.historyExtra || []).concat([ms.history]);
     }
     if (t === 'items') attachSyncApi_(result, savedNew.projectId);
   });
@@ -3057,8 +3109,8 @@ function deleteRow(table, key) {
     deleteRowsApi_(sheet, [hit.row]);
     SpreadsheetApp.flush();
 
-    logHistory_(def.sheet, Schema.keyLabel(t, current), '삭제', Schema.summarize(t, '삭제', current, null, extra), backup);
-    result = { ok: true, table: t, key: Schema.keyOf(t, current), removed: removed };
+    const hist = logHistory_(def.sheet, Schema.keyLabel(t, current), '삭제', Schema.summarize(t, '삭제', current, null, extra), backup);
+    result = { ok: true, table: t, key: Schema.keyOf(t, current), removed: removed, history: hist };
     if (t === 'items') attachSyncApi_(result, current.projectId);   // 배정 자동 행 갱신 + 그 프로젝트 배정 전체
   });
   return finalizeApi_(result, 'deleteRow');
@@ -3113,9 +3165,9 @@ function saveEffortWeek(member, week, rows, expected) {
     const summary = saved.length > 0
       ? saved.map(function (x) { return x.projectId + ' ' + x.md; }).join(' · ')
       : '(기록 없음 — 이 주차 행을 모두 제거)';
-    logHistory_(SHEETS.LOGS, w + ' · ' + m, '저장', summary, before);
+    const hist = logHistory_(SHEETS.LOGS, w + ' · ' + m, '저장', summary, before);
 
-    result = { ok: true, member: m, week: w, effortLogs: saved, warnings: checked.warnings || [] };
+    result = { ok: true, member: m, week: w, effortLogs: saved, warnings: checked.warnings || [], history: hist };
   });
   return finalizeApi_(result, 'saveEffortWeek');
 }
@@ -3154,7 +3206,7 @@ function addItems(projectId, milestone, part, blockNames) {
     const ctx = { settings: data.settings, data: data, mode: 'new', expected: null };
 
     // 1) 카탈로그 대조 + 이미 있는 블럭 분리 (시트를 쓰기 전에 전부 검사)
-    const source = data.blocksSource === 'sheet' ? '업무블럭 탭' : '기본 카탈로그';
+    const source = String(data.blocksSource || '').indexOf('sheet') === 0 ? '업무블럭 탭' : '기본 카탈로그';
     const picked = [];
     const skipped = [];
     names.forEach(function (name) {
@@ -3198,18 +3250,21 @@ function addItems(projectId, milestone, part, blockNames) {
 
     // 3) 배정 동기화(변경 없으면 시트·이력을 건드리지 않는다) + 이력 1줄
     const sync = syncAssignmentsFromItemsApi_(pid);
+    let addHistory = null;
     if (items.length > 0) {
       const summary = '블럭 ' + items.length + '건 추가: ' +
         items.map(function (it) { return it.block + ' ' + it.plannedMd + ' M/D'; }).join(' · ') +
         (notes.length > 0 ? '\n첫 주석 ' + notes.length + '건(요청)' : '') +
         (skipped.length > 0 ? '\n이미 있어 건너뜀: ' + skipped.join(' · ') : '');
-      logHistory_(SHEETS.ITEMS, pid + ' · ' + ms + ' · ' + pt, '추가', summary, null);
+      addHistory = logHistory_(SHEETS.ITEMS, pid + ' · ' + ms + ' · ' + pt, '추가', summary, null);
     }
     result = {
       ok: true, projectId: pid, milestone: ms, part: pt,
       items: items, notes: notes, skipped: skipped,
-      assignments: sync.assignments, overlaps: sync.overlaps
+      assignments: sync.assignments, overlaps: sync.overlaps,
+      history: addHistory
     };
+    if (sync.history) result.historyExtra = [sync.history];
   });
   return finalizeApi_(result, 'addItems');
 }
@@ -3227,7 +3282,7 @@ function syncAssignmentsFromItemsApi_(pid) {
   if (!project) throw new Error('프로젝트 "' + pid + '" 을(를) 프로젝트 탭에서 찾을 수 없습니다.');
   const r = Schema.assignmentsFromItems(project, data.items, data.milestones, data.assignments, data.settings);
   const mine = function (list) { return list.filter(function (a) { return a.projectId === pid; }); };
-  if (!r.changed) return { assignments: mine(data.assignments), overlaps: r.overlaps, changed: false };
+  if (!r.changed) return { assignments: mine(data.assignments), overlaps: r.overlaps, changed: false, history: null };
 
   const prevAuto = mine(data.assignments).filter(function (a) { return a.note === Schema.AUTO_ASSIGN_NOTE; });
   const w = writeProjectAssignmentsApi_(pid, true, r.auto);
@@ -3235,20 +3290,22 @@ function syncAssignmentsFromItemsApi_(pid) {
   const overlapLines = r.overlaps.map(function (o) {
     return o.member + ' ' + o.role + ': 세부 합계 ' + o.itemsMd + ' · 수동 ' + o.manualMd + ' (수동 행 유지)';
   });
-  logHistory_(SHEETS.ASSIGNMENTS, pid, '저장',
+  const hist = logHistory_(SHEETS.ASSIGNMENTS, pid, '저장',
     '세부항목 동기화: 자동 ' + w.saved.length + '행(겹침 ' + r.overlaps.length + ')' +
       (lines.length > 0 ? '\n' + lines.join('\n') : '') +
       (overlapLines.length > 0 ? '\n' + overlapLines.join('\n') : ''),
     prevAuto);
   const after = readRows_(SHEETS.ASSIGNMENTS).map(function (x) { return assignmentFromRowApi_(x.values); });
-  return { assignments: mine(after), overlaps: r.overlaps, changed: true };
+  return { assignments: mine(after), overlaps: r.overlaps, changed: true, history: hist };
 }
 
 // 응답 객체에 그 프로젝트 배정 전체(assignments)와 overlaps 를 붙인다 (items 쓰기 3경로 공용)
+// 동기화가 실제로 시트를 고쳤으면 그때 남긴 이력 항목을 historyExtra 에 덧붙인다(화면이 "최근 변경" 에 함께 끼워 넣는다)
 function attachSyncApi_(result, pid) {
   const s = syncAssignmentsFromItemsApi_(pid);
   result.assignments = s.assignments;
   result.overlaps = s.overlaps;
+  if (s.history) result.historyExtra = (result.historyExtra || []).concat([s.history]);
   return result;
 }
 
@@ -3402,7 +3459,8 @@ function memberFromRowApi_(v, settings) {
     role: strApi_(v[c.role]),
     capacityMd: numOrApi_(v[c.capacityMd], defaultCapacity),
     status: enumOrApi_(v[c.status], '재직'),
-    color: strApi_(v[c.color])
+    color: strApi_(v[c.color]),
+    email: strApi_(v[c.email])          // 6턴 D17 · 비어 있어도 된다(화면이 이름 선택으로 넘어간다)
   };
 }
 
@@ -3567,7 +3625,7 @@ function settingsApi_() {
 // 세부항목·주석 탭이 없으면 [] · 업무블럭 탭이 없으면 Schema.DEFAULT_BLOCKS 복사본(blocksSource 'default'). 기존 6탭은 getSheet_ 오류 그대로
 function readAllApi_() {
   const settings = settingsApi_();
-  const blocks = readBlocksApi_();
+  const blocks = readBlocksApi_(settings);
   return {
     settings: settings,
     members: readRows_(SHEETS.MEMBERS).map(function (r) { return memberFromRowApi_(r.values, settings); }),
@@ -3579,7 +3637,8 @@ function readAllApi_() {
     items: readRowsOptApi_(SHEETS.ITEMS).map(function (r) { return itemFromRowApi_(r.values); }),
     notes: readRowsOptApi_(SHEETS.NOTES).map(function (r) { return noteFromRowApi_(r.values); }),
     blocks: blocks.list,
-    blocksSource: blocks.source
+    blocksSource: blocks.source,
+    derivedParts: blocks.derivedParts     // 6턴 D22 · 공통 블럭으로 채운 파트 이름(없으면 [])
   };
 }
 
@@ -3588,29 +3647,45 @@ function readRowsOptApi_(sheetName) {
   return SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName) ? readRows_(sheetName) : [];
 }
 
-// 업무블럭 카탈로그 → { source:'sheet'|'default', list:[…] }. 탭이 있으면 그대로 읽는다(비어 있어도 시트 우선)
-function readBlocksApi_() {
-  if (!SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEETS.BLOCKS)) {
-    return { source: 'default', list: JSON.parse(JSON.stringify(Schema.DEFAULT_BLOCKS)) };
-  }
-  return { source: 'sheet', list: readRows_(SHEETS.BLOCKS).map(function (r) { return blockFromRowApi_(r.values); }) };
+// 업무블럭 카탈로그 → { source, list, derivedParts }.
+//   source 'sheet'(업무블럭 탭) | 'default'(코드 기본 카탈로그) 에 파생이 섞이면 'sheet+derived' | 'default+derived' (6턴 D22)
+//   탭이 있어도 쓸 수 있는 행이 하나도 없으면 기본 카탈로그를 쓴다(Schema.blocksWithFallback 판정 usedDefault).
+//   설정 탭 역할 목록에 있는데 블럭이 0개인 파트에는 공통 블럭 5종(Schema.GENERIC_BLOCKS)을 파트만 바꿔 붙인다 —
+//   팀이 역할을 새로 만들어도 "고를 블럭이 하나도 없는" 파트가 생기지 않게 한다.
+function readBlocksApi_(settings) {
+  const sheetHas = !!SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEETS.BLOCKS);
+  const raw = sheetHas ? readRows_(SHEETS.BLOCKS).map(function (r) { return blockFromRowApi_(r.values); }) : [];
+  const r = Schema.blocksWithFallback(sheetHas ? raw : JSON.parse(JSON.stringify(Schema.DEFAULT_BLOCKS)), settings);
+  const base = (sheetHas && !r.usedDefault) ? 'sheet' : 'default';
+  return {
+    source: base + (r.derivedParts.length > 0 ? '+derived' : ''),
+    // usedDefault 면 목록 안에 Schema.DEFAULT_BLOCKS 원본 객체가 그대로 들어 있다 → 복사본을 돌려준다
+    list: r.usedDefault ? JSON.parse(JSON.stringify(r.list)) : r.list,
+    derivedParts: r.derivedParts
+  };
 }
 
-// ---------- 변경이력 최근 n건 → [{ at, user, sheet, key, action, summary }] 최신 먼저. 탭이 없으면 [] (G열 백업은 보내지 않는다) ----------
+// ---------- 변경이력 최근 n건 → [{ at, user, sheet, key, action, summary, row, backup }] 최신 먼저. 탭이 없으면 [] ----------
+// 6턴 D19 — 되돌리기 때문에 G열(이전 행 백업)과 시트 행 번호를 함께 내보낸다.
+//   row    = 시트 행 번호. 화면이 [되돌리기] 를 누를 때 index 와 함께 보내 "목록이 그 사이 바뀌지 않았는지" 대조한다
+//   backup = G열 JSON 을 푼 값(빈 칸이면 null). Schema.restoreCheck 가 이 값으로 되돌리기 가능 여부를 판정한다
 function readHistoryApi_(limit) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEETS.HISTORY);
   if (!sheet) return [];
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) return [];
   const n = Math.max(1, Math.min(numOrApi_(limit, HISTORY_LIMIT_Api_), lastRow - 1));
-  const values = sheet.getRange(lastRow - n + 1, 1, n, 6).getValues();
+  const width = Math.max(1, Math.min(HEADERS[SHEETS.HISTORY].length, sheet.getMaxColumns()));
+  const firstRow = lastRow - n + 1;
+  const values = sheet.getRange(firstRow, 1, n, width).getValues();
   const out = [];
   for (let i = values.length - 1; i >= 0; i--) {
     const v = values[i];
     if (strApi_(v[0]) === '' && strApi_(v[4]) === '') continue;
     out.push({
       at: stampApi_(v[0]), user: strApi_(v[1]), sheet: strApi_(v[2]),
-      key: strApi_(v[3]), action: strApi_(v[4]), summary: strApi_(v[5])
+      key: strApi_(v[3]), action: strApi_(v[4]), summary: strApi_(v[5]),
+      row: firstRow + i, backup: parseBackupApi_(v[6])
     });
   }
   return out;
@@ -3722,19 +3797,18 @@ function nextFreeRowApi_(sheet, table) {
   return 2;
 }
 
-// 새 행 한 줄 쓰기 → 쓴 행번호. 수식 열은 건너뛰고(미리 채워 둔 수식 보존) 연속 구간별로 setValues 한 뒤, 비어 있으면 수식을 채운다
-function writeNewRowApi_(sheet, table, values) {
+// 행 한 줄의 값 열을 통째로 쓴다. 수식 열은 건너뛰고(미리 채워 둔 수식 보존) 연속 구간별로 setValues 한다.
+// 신규 행 추가(writeNewRowApi_)와 되돌리기 복원(restoreWriteRowApi_)이 같은 규칙을 쓴다.
+function writeRowCellsApi_(sheet, table, rowNum, values) {
   const def = Schema.TABLES[table];
   const cells = Schema.toValues(table, values);
   const byCol = colFieldsApi_(table);
-  const r = nextFreeRowApi_(sheet, table);
-  ensureRowsApi_(sheet, r);
   let start = -1;
   const flushSegment = function (end) {          // [start, end) 구간을 한 번에 쓴다
     if (start < 0) return;
     const seg = [];
     for (let c = start; c < end; c++) seg.push(cellValueApi_(byCol[c], cells[c]));
-    sheet.getRange(r, start + 1, 1, seg.length).setValues([seg]);
+    sheet.getRange(rowNum, start + 1, 1, seg.length).setValues([seg]);
     start = -1;
   };
   for (let c = 0; c < def.width; c++) {
@@ -3742,6 +3816,13 @@ function writeNewRowApi_(sheet, table, values) {
     if (start < 0) start = c;
   }
   flushSegment(def.width);
+}
+
+// 새 행 한 줄 쓰기 → 쓴 행번호. 값 열을 쓴 뒤, 수식 열이 비어 있으면 그 행에 수식을 채운다
+function writeNewRowApi_(sheet, table, values) {
+  const r = nextFreeRowApi_(sheet, table);
+  ensureRowsApi_(sheet, r);
+  writeRowCellsApi_(sheet, table, r, values);
   SpreadsheetApp.flush();
   if (table === 'milestones') fillStatusFormulaIfEmptyApi_(sheet, r, 1);
   if (table === 'settlements') fillSettlementFormulasApi_(sheet, r);

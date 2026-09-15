@@ -5,7 +5,8 @@
  *  - 계약 §2 최상위 구조·필드 형식(날짜·일시·열거값)
  *  - 계약 §7 가상 데이터 규격(팀원 5 · 프로젝트 5 · 주차 8 · 유형 4종 · 상태 5종)
  *  - 계약 §4.7 경고 5종과 §4.4 Output 이 지시문에 적힌 값으로 나오는지
- *  - (5턴) 계약 §2.10~2.12 세부 항목 6 · 주석 4 · 업무 블럭 33 과 §9.11~9.12 롤업·배정 동기화 결과
+ *  - (5턴) 계약 §2.10~2.12 세부 항목 6 · 주석 4 · 업무 블럭(기본 카탈로그) 과 §9.11~9.12 롤업·배정 동기화 결과
+ *  - (6턴) 계약 §2.1 `meta.userMember` · §2.3 `members[].email`(형식·중복·빈 값) · §9.21 카탈로그 파생
  *
  * 파일이 없으면 전부 건너뛴다(mock 산출물이 아직 없는 단계에서도 테스트가 깨지지 않게).
  * 실행: node --test tests/sample-data.test.js
@@ -67,7 +68,12 @@ if (!EXISTS) {
     );
   });
 
-  test('§2.1 meta — 기준일 고정 2026-09-10 · 사용자 "미리보기 사용자" · 업무 블럭 출처 default', function () {
+  test('§2.1 meta — 기준일 고정 2026-09-10 · 사용자 "미리보기 사용자" · 업무 블럭 출처 default · 6턴 키 userMember', function () {
+    assert.deepEqual(
+      Object.keys(data.meta).sort(),
+      ['blocksSource', 'generatedAt', 'mode', 'sheetUrl', 'today', 'user', 'userMember'],
+      '계약 §2.1 의 meta 키(6턴 D17 userMember 추가)'
+    );
     assert.equal(data.meta.today, '2026-09-10', '산식·실렌더 재현성을 위해 고정');
     assert.match(data.meta.today, DATE_RE);
     assert.equal(data.meta.mode, 'mock');
@@ -200,18 +206,54 @@ if (!EXISTS) {
    * §1 열거값 — settings / members 참조 무결성
    * ---------------------------------------------------------------- */
 
-  test('§2.3 members — 역할·상태·가용', function () {
+  test('§2.3 members — 역할·상태·가용 · 필드 수 = 계약 §2.3(6턴 이메일 포함)', function () {
     data.members.forEach(function (m) {
       assertIn(m.role, data.settings.roles, m.name + ' 의 주역할');
       assertIn(m.status, MEMBER_STATUSES, m.name + ' 의 상태');
       assert.equal(typeof m.capacityMd, 'number', m.name + ' 의 월 가용 M/D');
       assert.equal(m.capacityMd, 20, '§7: 전원 가용 20');
+      assert.equal(Object.keys(m).length, S.TABLES.members.fields.length, m.name + ' 필드 수 = 계약 §2.3(6열)');
     });
     assert.deepEqual(
       data.members.map(function (m) { return m.role; }),
       ['운영 PM', '모객', '현장 운영', '디자인·제작', '정산·리포트'],
       '§7 역할 순서'
     );
+  });
+
+  test('§2.3 members[].email — 6턴 D17: 전원에게 키가 있고 · 값이 있으면 형식 · 팀원 간 중복 없음 · 빈 값 허용 · 가상 도메인만', function () {
+    const seen = {};
+    let filled = 0;
+    data.members.forEach(function (m) {
+      assert.equal(typeof m.email, 'string', m.name + ' 의 이메일은 문자열(비어 있어도 키는 있다)');
+      if (m.email === '') { return; }
+      filled++;
+      assert.match(m.email, /^[^\s@]+@[^\s@]+\.[^\s@]+$/, m.name + ' 의 이메일 형식');
+      const key = m.email.toLowerCase();
+      assert.ok(!seen[key], '이메일 중복: ' + m.email);
+      seen[key] = true;
+      assert.match(m.email, /@example\.com$/, '가상 데이터는 실제 회사 계정을 쓰지 않는다(민감 정보 · D17)');
+      /* 넣었다면 편집 계약도 통과해야 한다 */
+      const r = S.validateRow('members', m, {
+        settings: data.settings,
+        data: { members: data.members.filter(function (x) { return x.name !== m.name; }) },
+        mode: 'new'
+      });
+      assert.equal(r.ok, true, m.name + ': ' + JSON.stringify(r.errors));
+    });
+    assert.ok(filled >= 1, '적어도 한 명은 이메일이 있어야 meta.userMember 자동 매칭을 미리보기에서 볼 수 있다');
+    assert.ok(filled < data.members.length, '비어 있는 팀원도 있어야 "이름 선택" 폴백 화면을 볼 수 있다');
+  });
+
+  test('§2.1 meta.userMember — 6턴 D17: 로그인 계정 ↔ 팀원 매칭 결과 · Schema.matchMember 와 같은 값', function () {
+    assert.equal(typeof data.meta.userMember, 'string', 'meta.userMember 는 팀원 이름 또는 빈 문자열');
+    assertIn(data.meta.userMember, memberNames, 'mock 은 매칭된 상태로 시작한다');
+    const hit = data.members.filter(function (m) { return m.name === data.meta.userMember; })[0];
+    assert.ok(hit, 'userMember 는 팀원 탭에 있는 이름');
+    assert.ok(hit.email !== '', '매칭된 팀원에는 이메일이 있어야 한다');
+    assert.equal(S.matchMember(hit.email, data.members), data.meta.userMember, '서버(matchMember)와 mock 이 같은 판정');
+    assert.equal(S.matchMember(hit.email.toUpperCase(), data.members), data.meta.userMember, '대소문자 무시');
+    assert.equal(S.matchMember('없는사람@example.com', data.members), '', '못 찾으면 빈 문자열 → 화면이 이름 선택으로');
   });
 
   test('§2.4 projects — 유형·상태·담당PM 참조', function () {
@@ -426,8 +468,28 @@ if (!EXISTS) {
     );
   });
 
-  test('§2.12 blocks — meta.blocksSource 가 default 이면 Schema.DEFAULT_BLOCKS 와 완전히 같다(서버 폴백 = mock)', function () {
-    assert.deepEqual(data.blocks, S.DEFAULT_BLOCKS, '업무블럭 탭 없이 쓰는 기본 카탈로그는 코드(src/schema.js)가 단일 원천');
+  test('§2.12 blocks — meta.blocksSource 가 default 이면 코드 기본 카탈로그를 그대로 싣는다(설정 역할 목록 범위 · 서버 폴백 = mock)', function () {
+    assert.equal(data.meta.blocksSource, 'default');
+    /*
+     * 6턴 D22 로 DEFAULT_BLOCKS 가 44건(파트 8종)이 됐다. mock 의 `설정` 역할 목록은 6종이라
+     * 그 6파트의 기본 블럭을 **순서까지 그대로** 싣는다 — 한 필드라도 다르면 여기서 잡힌다.
+     * (실시트처럼 역할 8종을 쓰는 mock 으로 바뀌면 44건 전부가 되고 같은 단언이 그대로 통과한다.)
+     */
+    const expected = S.DEFAULT_BLOCKS.filter(function (b) { return data.settings.roles.indexOf(b.part) !== -1; });
+    assert.deepEqual(data.blocks, expected, '업무블럭 탭 없이 쓰는 기본 카탈로그는 코드(src/schema.js)가 단일 원천');
+  });
+
+  test('§9.21 blocksWithFallback — mock 은 역할 전부에 블럭이 있어 파생이 없다 · 역할을 늘리면 공통 블럭 5종이 파생된다', function () {
+    const asIs = S.blocksWithFallback(data.blocks, data.settings);
+    assert.deepEqual(asIs.derivedParts, [], 'mock 역할 목록에는 블럭 0개인 파트가 없다');
+    assert.deepEqual(asIs.list, data.blocks, '파생이 없으면 원본 그대로');
+    assert.equal(asIs.usedDefault, false, 'blocks 배열이 비어 있지 않으므로 기본값 폴백이 아니다');
+
+    const roles8 = data.settings.roles.concat(['운영총괄', '운영 Sub']);
+    const grown = S.blocksWithFallback(data.blocks, Object.assign({}, data.settings, { roles: roles8 }));
+    assert.deepEqual(grown.derivedParts, ['운영총괄', '운영 Sub'], '블럭 0개인 파트만 파생');
+    assert.equal(grown.list.length, data.blocks.length + 10, '파트당 공통 블럭 5종');
+    assert.deepEqual(grown.list.slice(0, data.blocks.length), data.blocks, '원본 순서 유지 · 파생분은 뒤에');
   });
 
   /* ---------------------------------------------------------------- *

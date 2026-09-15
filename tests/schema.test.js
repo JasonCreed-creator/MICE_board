@@ -20,6 +20,8 @@ const S = require('../src/schema.js');
 
 const TYPES = ['① 리멤버 MICE 솔루션', '② 일반 행사(게런티 없음)', '③ DMS·주최형', '④ 커스터마이즈'];
 const ROLES = ['영업', '모객', '운영 PM', '현장 운영', '디자인·제작', '정산·리포트'];
+/** 6턴 D22 — 실시트 `설정` 역할 8종(팀이 운영총괄·운영 Sub 를 추가했다). 기본 카탈로그가 덮는 파트 목록이기도 하다 */
+const ROLES8 = ROLES.concat(['운영총괄', '운영 Sub']);
 
 /** 계약 §2.2 설정 — 목록 4종 + 월 가용 M/D 20 */
 function baseSettings() {
@@ -168,7 +170,7 @@ test('§9.1 표 정의 — 9개 표의 탭 이름·열 수·키가 계약 §3 �
     projects: { sheet: '프로젝트', width: 16, key: ['id'] },
     assignments: { sheet: '배정', width: 9, key: ['id'] },
     effortLogs: { sheet: '공수기록', width: 6, key: ['week', 'member', 'projectId'] },
-    members: { sheet: '팀원', width: 5, key: ['name'] },
+    members: { sheet: '팀원', width: 6, key: ['name'] },       // 6턴 D17 — F 이메일 추가(A:F)
     milestones: { sheet: '마일스톤', width: 6, key: ['projectId', 'name'] },
     settlements: { sheet: '정산', width: 10, key: ['projectId'] },
     items: { sheet: '세부항목', width: 13, key: ['id'] },            // 5턴 §3.10 (A:M · M 행사명 수식)
@@ -205,7 +207,7 @@ test('§9.1 표 정의 — fields[].col 은 0..width-1 범위·중복 없음, �
   assert.deepEqual(S.TABLES.blocks.formulaCols, []);
 });
 
-test('§9.1 고정 열거값 7종 · 자동 배정 표식 · 변경이력 탭 정의', function () {
+test('§9.1 고정 열거값 7종 · 자동 배정 표식 · 변경이력 탭 정의(6턴 동작 "되돌림" 포함)', function () {
   assert.deepEqual(S.FIXED_ENUMS.assignmentStatus, ['예정', '진행', '종료']);
   assert.deepEqual(S.FIXED_ENUMS.memberStatus, ['재직', '휴직', '퇴사', '지원']);
   assert.deepEqual(S.FIXED_ENUMS.settlementStatus, ['미착수', '진행', '완료']);
@@ -216,7 +218,7 @@ test('§9.1 고정 열거값 7종 · 자동 배정 표식 · 변경이력 탭 �
   assert.equal(S.AUTO_ASSIGN_NOTE, '자동(세부항목)', 'D13 — 배정 탭 비고에 이 값이 있는 행만 동기화가 덮어쓴다');
   assert.equal(S.HISTORY.sheet, '변경이력');
   assert.deepEqual(S.HISTORY.headers, ['일시', '사용자', '탭', '키', '동작', '변경 내용', '이전 행(백업)'], '계약 §3.9 헤더');
-  assert.deepEqual(S.HISTORY.actions, ['추가', '수정', '삭제', '저장']);
+  assert.deepEqual(S.HISTORY.actions, ['추가', '수정', '삭제', '저장', '되돌림'], '6턴 D19 — 되돌리기도 이력에 남는다');
 });
 
 test('§9.1 field() — 필드 조회 · 없는 필드는 null · 없는 표는 오류', function () {
@@ -461,10 +463,14 @@ test('§9.3 members — 수정 모드에서 이름 변경은 오류(D10) · 역�
   assert.equal(r2.values.role, '영업');
 });
 
-test('§9.3 members — 정상 신규 행: 가용 빈 값 → 20 · 상태 빈 값 → 재직', function () {
-  const r = S.validateRow('members', { name: '팀원3', role: '영업', capacityMd: '', status: '', color: '' }, ctx());
+test('§9.3 members — 정상 신규 행: 가용 빈 값 → 20 · 상태 빈 값 → 재직 · 이메일 빈 값 허용(6턴 D17)', function () {
+  const r = S.validateRow('members', { name: '팀원3', role: '영업', capacityMd: '', status: '', color: '', email: '' }, ctx());
   assert.equal(r.ok, true, JSON.stringify(r.errors));
-  assert.deepEqual(r.values, { name: '팀원3', role: '영업', capacityMd: 20, status: '재직', color: '' });
+  assert.deepEqual(r.values, { name: '팀원3', role: '영업', capacityMd: 20, status: '재직', color: '', email: '' });
+
+  const r2 = S.validateRow('members', { name: '팀원4', role: '영업' }, ctx());
+  assert.equal(r2.ok, true, JSON.stringify(r2.errors));
+  assert.equal(r2.values.email, '', '이메일 키가 없어도 빈 문자열로 정규화된다');
 });
 
 /* ================================================================== *
@@ -847,7 +853,12 @@ test('§9.8 toValues — 프로젝트 16열 · 없는 키는 "" · 수식 열 �
 
   const e = S.toValues('effortLogs', { week: '2026-09-14', member: '팀원1' });
   assert.deepEqual(e, ['2026-09-14', '팀원1', '', '', '', ''], '없는 키는 빈 문자열');
-  assert.deepEqual(S.toValues('members', null), ['', '', '', '', ''], '행이 없어도 길이 유지');
+  assert.deepEqual(S.toValues('members', null), ['', '', '', '', '', ''], '행이 없어도 길이 유지(6턴 D17 — 팀원 6열)');
+  assert.deepEqual(
+    S.toValues('members', { name: '팀원1', role: '운영 PM', capacityMd: 20, status: '재직', color: '#3366CC', email: 'hong@company.com' }),
+    ['팀원1', '운영 PM', 20, '재직', '#3366CC', 'hong@company.com'],
+    '이메일은 F열(마지막)'
+  );
 });
 
 /* ================================================================== *
@@ -1372,14 +1383,14 @@ test('§9.13 keyOf · keyLabel · findRow · summarize · diff — 세부 항목
  * §9.14 DEFAULT_BLOCKS — 기본 업무 블럭 카탈로그(업무블럭 탭이 없을 때 서버·mock 이 그대로 쓴다)
  * ================================================================== */
 
-test('§9.14 DEFAULT_BLOCKS — 33건 · 파트 6종 전부(설정 역할 순서) · (파트·블럭) 유일 · 기본 마일스톤은 표준 9종 · M/D 0.5 단위 · 영업 4건만 주최형 제외', function () {
+test('§9.14 DEFAULT_BLOCKS — 44건(6턴 D22: 운영총괄 6 · 운영 Sub 5 추가) · 파트 8종(설정 역할 순서) · (파트·블럭) 유일 · 기본 마일스톤은 표준 9종 · M/D 0.5 단위 · 영업 4건만 주최형 제외', function () {
   const B = S.DEFAULT_BLOCKS;
   const MS = ['계약 체결', '발주처 기초자료 수령', '답사', '랜딩페이지 컨펌', '운영계획서 확정', '행사 7일 전 점검', '행사 당일', '정산보고 제출', '정산 승인'];
-  assert.equal(B.length, 33);
+  assert.equal(B.length, 44);
   const byPart = {};
   const keys = new Set();
   B.forEach(function (b) {
-    assert.ok(ROLES.indexOf(b.part) !== -1, '파트 ' + b.part);
+    assert.ok(ROLES8.indexOf(b.part) !== -1, '파트 ' + b.part);
     assert.ok(typeof b.block === 'string' && b.block.length > 0, '블럭 이름');
     assert.ok(MS.indexOf(b.milestone) !== -1, b.block + ' 의 기본 마일스톤 "' + b.milestone + '"');
     assert.ok(typeof b.md === 'number' && b.md > 0 && (b.md * 2) % 1 === 0, b.block + ' 기본 M/D ' + b.md);
@@ -1391,14 +1402,14 @@ test('§9.14 DEFAULT_BLOCKS — 33건 · 파트 6종 전부(설정 역할 순서
     keys.add(b.part + '|' + b.block);
     byPart[b.part] = (byPart[b.part] || 0) + 1;
   });
-  assert.equal(keys.size, 33, '(파트·블럭) 중복 없음');
-  assert.deepEqual(byPart, { '영업': 4, '모객': 5, '운영 PM': 8, '현장 운영': 6, '디자인·제작': 6, '정산·리포트': 4 });
-  assert.deepEqual(Object.keys(byPart), ROLES, '설정 역할 순서대로 묶여 있다');
-  assert.equal(B.reduce(function (s, b) { return s + b.md; }, 0), 54.5, '기본 M/D 합계(카탈로그 전체)');
+  assert.equal(keys.size, 44, '(파트·블럭) 중복 없음');
+  assert.deepEqual(byPart, { '영업': 4, '모객': 5, '운영 PM': 8, '현장 운영': 6, '디자인·제작': 6, '정산·리포트': 4, '운영총괄': 6, '운영 Sub': 5 });
+  assert.deepEqual(Object.keys(byPart), ROLES8, '설정 역할 순서대로 묶여 있다(추가 2종은 뒤에)');
+  assert.equal(B.reduce(function (s, b) { return s + b.md; }, 0), 64.5, '기본 M/D 합계(카탈로그 전체)');
 });
 
-test('§9.14 DEFAULT_BLOCKS — 카탈로그 33건이 blocks 표 검증을 통과 · 파트·블럭 필수 · 대시보드에서 지울 수 없다', function () {
-  const c = ctx();
+test('§9.14 DEFAULT_BLOCKS — 카탈로그 44건이 blocks 표 검증을 통과(역할 8종 설정) · 파트·블럭 필수 · 대시보드에서 지울 수 없다', function () {
+  const c = ctx({ settings: { roles: ROLES8 } });
   S.DEFAULT_BLOCKS.forEach(function (b) {
     const r = S.validateRow('blocks', b, c);
     assert.equal(r.ok, true, b.block + ': ' + JSON.stringify(r.errors));
@@ -1410,4 +1421,8 @@ test('§9.14 DEFAULT_BLOCKS — 카탈로그 33건이 blocks 표 검증을 통�
   assert.deepEqual(fieldsOf(r2), ['part', 'md']);
   assert.equal(S.deleteCheck('blocks', S.DEFAULT_BLOCKS[0], {}).ok, false);
   assert.equal(S.toValues('blocks', S.DEFAULT_BLOCKS[0]).length, 8);
+
+  /* 역할 목록이 6종인 시트에서는 운영총괄·운영 Sub 블럭이 파트 오류가 된다 — 카탈로그 파생(§9.21)이 필요한 이유 */
+  const r3 = S.validateRow('blocks', S.DEFAULT_BLOCKS[33], ctx());
+  assert.deepEqual(fieldsOf(r3), ['part'], '설정 역할에 없는 파트는 목록 오류');
 });
