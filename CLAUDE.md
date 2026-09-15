@@ -67,7 +67,7 @@ data/          실제 등록용 TSV 등 입력 자료
 - 모델: **Fable 계열(현재 5.1)** · Effort **표준** — Apps Script 연동·배포 가이드 파트는 **엑스트라**
 - 서브에이전트 분할(병렬, 파일 단위로 겹치지 않게): ① 서버 `Code.gs` ② 화면 `src/app.js`·`styles.css`·`render-check.js` ③ 문서·테스트 → 메인이 계약(`docs/DATA-CONTRACT.md`·`src/schema.js`) 기준으로 병합
 - 저장소 전체 git 명령(stash·reset·checkout)은 병렬 에이전트에서 금지
-- 환경: `node` 는 PATH 에 없음(`PROGRESS.md` 환경 메모의 경로 사용). Bash 히어독은 10KB 초과·백슬래시에 취약 → 큰 파일은 Write 도구
+- 환경은 두 가지다 — **클라우드 세션(GitHub)**: `node`·`npm`·Chromium 모두 있음, 게이트 전부 실행 가능, 단 Apps Script 직접 반영·시트 쓰기는 불가(읽기만). **로컬 PC**: `node` 가 PATH 에 없고 npm 도 없음(`PROGRESS.md` 환경 메모의 경로 사용), Bash 히어독은 10KB 초과·백슬래시에 취약 → 큰 파일은 Write 도구. 어느 쪽인지 먼저 확인하고 시작한다
 
 ## 6. 관련 자산 (참조만, 복제 금지)
 - Slack 워크플로 "성사 프로젝트 등록"·"MICE 계약완료" 폼 필드 ↔ `프로젝트` 탭 1:1 호환

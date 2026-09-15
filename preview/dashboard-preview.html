@@ -3771,6 +3771,7 @@ table.tb-table tr.is-auto input:disabled, table.tb-table tr.is-auto select:disab
     }
     var done = str(p.done);
     var due = str(p.due);
+    var today = str(c.today || (c.data && c.data.meta && c.data.meta.today));
     var days = (p.days === null || p.days === undefined || p.days === '') ? null : Number(p.days);
     if (act === 'complete') {
       if (done !== '' && !isDateStr(done)) { errors.push({ field: 'done', label: '완료일', message: '완료일은 YYYY-MM-DD 형식의 날짜여야 합니다.' }); }
@@ -3791,9 +3792,16 @@ table.tb-table tr.is-auto input:disabled, table.tb-table tr.is-auto select:disab
         if (isDateStr(row.due) && isDateStr(done) && addDaysStr(done, 365) < row.due) {
           warnings.push(str(row.name) + ': 완료일이 예정일보다 1년 이상 빠릅니다. 날짜를 확인하세요.');
         }
+        /* 일괄 처리는 한 번에 여러 행을 바꾸므로 연도 오타가 그대로 N건이 된다 */
+        if (today !== '' && isDateStr(done) && done > today) {
+          warnings.push(str(row.name) + ': 완료일 ' + done + ' 이 오늘보다 뒤입니다. 연도를 잘못 넣지 않았는지 확인하세요.');
+        }
       } else if (act === 'shift') {
         if (due !== '' && isDateStr(due)) { row.due = due; }
         else if (days !== null && isFinite(days) && isDateStr(row.due)) { row.due = addDaysStr(row.due, Math.round(days)); }
+        else if (days !== null && !isDateStr(row.due)) {
+          warnings.push(str(row.name) + ': 예정일이 비어 있어 건너뜁니다. 시트에서 예정일을 먼저 넣으세요.');
+        }
       }
       return row;
     });
@@ -3815,6 +3823,7 @@ table.tb-table tr.is-auto input:disabled, table.tb-table tr.is-auto select:disab
     roles.forEach(function (role) {
       var part = str(role);
       if (part === '' || have[part]) { return; }
+      have[part] = true;            // 설정 탭에 같은 역할이 두 번 있어도 블럭을 두 번 만들지 않는다((파트·블럭) 유일키)
       derivedParts.push(part);
       GENERIC_BLOCKS.forEach(function (g) {
         out.push({

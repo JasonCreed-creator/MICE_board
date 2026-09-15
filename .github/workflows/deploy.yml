@@ -83,6 +83,37 @@ jobs:
           node -e "require('fs').writeFileSync('.clasp.json', JSON.stringify({ scriptId: process.env.CLASP_SCRIPT_ID, rootDir: 'apps-script' }, null, 2) + '\n')"
           echo "자격증명(~/.clasprc.json)과 .clasp.json 을 이 실행 안에서만 만들었습니다(저장소에는 커밋되지 않습니다)."
 
+      # `clasp push -f` 는 Apps Script 쪽을 통째로 덮어쓴다. 이 프로젝트는 5턴까지
+      # 편집기에 직접 붙여넣는 방식으로 운영해서, 누군가 편집기에서 고친 내용이 있으면
+      # 그대로 사라진다. 그래서 덮어쓰기 전에 원격을 내려받아 백업으로 남기고,
+      # 저장소와 다르면 경고를 띄운다(배포는 막지 않는다 — 보통은 저장소가 더 최신이다).
+      - name: 덮어쓰기 전 원격 내려받아 백업
+        if: steps.secrets.outputs.ready == 'true'
+        run: |
+          mkdir -p /tmp/apps-script-remote
+          cp -r apps-script/. /tmp/apps-script-repo-backup 2>/dev/null || true
+          if npx clasp pull >/dev/null 2>&1; then
+            cp -r apps-script/. /tmp/apps-script-remote/
+            if git diff --quiet -- apps-script/; then
+              echo "원격과 저장소가 같습니다 — 덮어쓸 편집기 수정본이 없습니다."
+            else
+              echo "::warning title=편집기에서 고친 내용이 있을 수 있습니다::Apps Script 쪽 내용이 저장소와 다릅니다. 덮어쓰기 전 상태를 'apps-script-remote-backup' 아티팩트로 남겼습니다. 보통은 저장소가 더 최신이라 정상이지만, 편집기에서 직접 고친 것이 있었다면 그 아티팩트에서 꺼내 쓰세요."
+              git --no-pager diff --stat -- apps-script/ || true
+            fi
+          else
+            echo "::warning title=원격을 내려받지 못했습니다::백업 없이 덮어씁니다(권한·네트워크 확인)."
+          fi
+          git checkout -- apps-script/ || true
+
+      - name: 덮어쓰기 전 원격 백업 올리기
+        if: steps.secrets.outputs.ready == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: apps-script-remote-backup-${{ github.run_number }}
+          path: /tmp/apps-script-remote
+          if-no-files-found: ignore
+          retention-days: 30
+
       - name: apps-script/ 올리기 (clasp push)
         if: steps.secrets.outputs.ready == 'true'
         run: npx clasp push -f

@@ -226,3 +226,74 @@
 3. 실기 확인: A 상세 → 마일스톤 행 클릭(펼침) → [블럭 추가] → 파트 → 블럭 체크 → 추가 → 담당 지정 → B 배정 보드에 "자동" 행 · 주석 남기기 · E "핵심 항목 미배정"
 4. 확인 필요 2~9번 답(2026-09-13 체크인 표) 여전히 대기
 **알려진 사항**: 마일스톤 예정일을 바꿔도 자동 배정 기간은 다음 세부 항목 저장 때 갱신됨 · 자동 배정은 담당이 있는 항목만 · 마지막 ID 행 삭제 후 같은 번호 재발급(배정 ID 와 동일) · 3.1 Cowork 재검수 미실시(4·5턴과 함께)
+
+## 6턴 — 2026-09-15 (Code · 클라우드 세션 · Opus 5) · 부채 정리 + 운영 UX + CI·clasp 자동화 · SPEC v1.4
+
+**기획자님 결정(1턴 카드)**: 업그레이드 대상 = 부채 정리 + CI 자동화 · 운영 UX 보강 / 범위 [B] 3턴 분할 / 본인 식별 = 이메일 자동 + 이름 선택 폴백 / 배포 = clasp + GitHub Actions 자동 배포. UX 는 **C1 내 주간 공수 · C2 지연 마일스톤 일괄 처리 · C3 배정 가드 + 되돌리기** 채택(C4 미입력 유도 · C5 주간 현황 복사 · C6 검색은 제외).
+
+### 착수 근거 — 실시트 진단 (2026-09-15, Drive 재읽기)
+| # | 사실 | 대응 |
+|---|---|---|
+| 1 | `공수기록` **0행**(버전 4에 주간 입력이 배포돼 있는데도) | C1 |
+| 2 | `설정` 역할 **8종**(팀이 운영총괄·운영 Sub 추가) ↔ 기본 블럭 카탈로그는 6파트 → 이진철님이 5개 프로젝트에서 쓰는 `운영총괄`에 고를 블럭이 0개 | D22 |
+| 3 | `세부항목`·`주석`·`업무블럭` 탭 없음 = **버전 5 미배포 확정** | clasp 자동 배포 |
+| 4 | 배정 저장 09-14 12:49 에 JLL 4행 → 1행(3행 소실, 백업엔 남음) | C3 |
+| 5 | 마일스톤 담당 공란 **44/61** · 지연 12건 방치 | C2 |
+| 6 | `정산` 7행 전부 빈 값 · 착수일·정산 예정일 7건 전부 공란 | (다음 턴 후보 C4) |
+
+### 산출물
+| 경로 | 내용 |
+|---|---|
+| `src/schema.js` | `members` 폭 6(이메일 F열) · `HISTORY.actions` 에 `되돌림` · `DEFAULT_BLOCKS` 33 → **44**(운영총괄 6 · 운영 Sub 5) · `GENERIC_BLOCKS` 5 · `matchMember` · `assignmentSaveGuard` · `restoreCheck`/`restoreLabel` · `validateBulkMilestone` · `blocksWithFallback` · `weekEffortRows` |
+| `apps-script/Code.gs` | `restoreHistory` · `bulkMilestone` · `ensureMemberEmailColumn_` · `meta.userMember`·`meta.derivedParts` · `history[]` 에 `row`·`backup` · 모든 쓰기 응답에 `history`/`historyExtra` · 마일스톤 예정일 변경 시 배정 재동기화(A3) · 5열 팀원 탭 읽기 폭 보정 |
+| `src/app.js` · `styles.css` | C 화면 최상단 **내 주간 공수** 카드 + 모든 화면 헤더 바로가기 · E 지연 목록 다중 선택 + 일괄 처리 · 배정 저장 가드 · 최근 변경 [되돌리기] · mock 어댑터 동일 구현 · `normalizeServerWrite`(서버 부분 응답 → 화면 전체 배열) |
+| `scripts/render-check.js` | 게이트 3-20~3-26 추가 · 리눅스·CI 대응(`--no-sandbox`, 윈도우는 그대로) |
+| `scripts/static-check.js` | **신설** — 금지 필드·대화상자·외부 주소·화면 약어·산출물 동기·자격증명 6종 자동 검사 |
+| `.github/workflows/gate.yml`·`deploy.yml` | **신설** — push·PR 마다 빌드 재현성·테스트·실렌더·정적 검사 / `main` 의 `apps-script/**` 변경 시 clasp 배포(배포 ID 고정 → 주소 유지, Secret 없으면 건너뜀) |
+| `package.json`·`.clasp.json.example`·`.claspignore` | **신설** — `npm run gate`·`push`·`deploy`. 실제 `.clasp.json` 은 커밋하지 않는다(저장소 공개) |
+| `docs/SPEC-v1.md` **v1.4** · `docs/DATA-CONTRACT.md` · `guide/설치-운영-가이드.md` | D17~D24 · 계약 §2.9·§5.1 신설 · 가이드 §6.14~6.16 · **§10 자동 배포 신설** |
+| `docs/code-brief-T6.md` | 6턴 지시문 |
+
+### 게이트 결과 (전부 이 세션에서 직접 실행)
+| # | 게이트 | 결과 |
+|---|---|---|
+| 1 | 빌드 | 성공 · 외부 주소 0 · **재현성 확인**(다시 빌드해도 `git diff` 0) |
+| 2 | 테스트 | `node --test` **154 / 154**(metrics 38 · sample-data 27 · schema 89) |
+| 3 | 실렌더 | 검사 전수 통과 · **실패 0 · 콘솔 오류 0 · 대화상자 0** · 스크린샷 22 · mock 쓰기 40 |
+| 4 | 정적 검사 | 통과(금지 필드 0 · 대화상자 0 · 외부 주소 0 · 화면 약어 0 · 자격증명 0) |
+| 5 | jc-redteam | Critical 0 · **Major 3 · Minor 2 — 전부 이 턴에서 처리** (아래) |
+
+### jc-redteam 감수 결과 (3.1·4·5턴 미실시분 포함 일괄)
+| 등급 | 결함 | 처리 |
+|---|---|---|
+| Major | **일괄 처리 키 형식 불일치** — 화면은 `"P-…|이름"` 문자열, 서버는 `{projectId, name}` 객체. gas 모드에서 전량 "찾을 수 없습니다" 로 실패했을 것 | gas 어댑터에서 변환(고칠 곳 한 군데) |
+| Major | **서버 부분 응답 ↔ 화면 전체 배열 기대** — 서버는 그 프로젝트 배정만 주는데 화면이 `state.data.assignments` 를 통째로 교체 → **다른 프로젝트 배정이 화면에서 사라짐**(새로고침 전까지) | `normalizeServerWrite` 로 현재 데이터에 합쳐 정규화 |
+| Major | **`clasp push -f` 가 편집기 직접 수정본을 말없이 덮어씀** — 이 프로젝트는 5턴까지 붙여넣기로 운영했다 | 덮어쓰기 전 원격을 내려받아 **백업 아티팩트(30일)** 로 남기고 다르면 경고. 배포는 막지 않는다 |
+| Minor | 설정 탭에 같은 역할이 두 번 있으면 파생 블럭이 두 번 생성((파트·블럭) 유일키 위반) | 파생 시 파트를 표시해 한 번만 |
+| Minor | 일괄 완료일이 미래여도 무경고(연도 오타가 N건에 그대로) · 예정일 빈 행에 조정하면 조용히 무시 | 두 경우 모두 경고 문구 추가 |
+| (기각) | localStorage 에 남은 옛 팀원 이름 — 이미 팀원 목록과 대조해 지우고 있었다 | 지적 철회 |
+
+**검증 증거**: 실시트 형상(역할 8종 · 공수기록 0행 · `지원` 7명)으로 지표 함수 전수 호출 → 예외 0, `kpis` 가용 M/D 200 = 재직 10명만(지원 정상 제외), 경고 미기록 10 · 지연 7 · 미배정 4. clasp 3.x 명령(`create-deployment -i`)은 공식 README 로 재확인(2026-09-15).
+> 감수 산출물은 별도 리포트 대신 이 표로 남긴다 — 결함 5건 규모라 문서 1개를 더 만드는 값이 없다(원칙 이탈 사유).
+
+### 환경 메모 갱신 — **클라우드 세션(GitHub)으로 전환됨**
+- 이 세션은 `JasonCreed-creator/MICE_board` 를 클론한 리눅스 컨테이너. **`node` v22 · `npm` · Chromium 전부 사용 가능** → 빌드·테스트·실렌더·정적 검사를 전부 여기서 돌린다(로컬 PC 의 "node 가 PATH 에 없음 · npm 없음 · 히어독 10KB" 제약은 이 환경엔 없다)
+- 실렌더: `CHROME_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome node scripts/render-check.js`
+- **Chrome 확장은 없다** → Apps Script 직접 반영·시트 쓰기 불가. 시트는 Drive 커넥터로 **읽기만** 가능
+
+### ⚠️ 저장소가 공개(public) 상태 — 미해결
+`JasonCreed-creator/MICE_board` 가 공개로 만들어졌다(목표는 비공개였다). 이미 푸시된 커밋에 **발주처·계약금액 · 팀원 17명 실명 · 회사 도메인 이메일 · 시트 URL · Apps Script 프로젝트 ID**(PROGRESS.md · `data/*.tsv`)가 들어 있다.
+- 기획자님 판단: "일단 그대로, 6턴 먼저"
+- **푸시가 막혀 있다** — 권한 분류기가 공개 저장소 게시를 거부. 6턴 결과는 전부 로컬 커밋으로만 있다
+- 푸는 방법: ① 저장소를 비공개로 전환(Settings → General → Danger Zone → Change visibility) ② `.claude/settings.local.json` 에 `git push` 허용 규칙
+- 6턴 산출물에는 **새 민감 정보를 넣지 않았다**(`.clasp.json` 미커밋 · 실제 프로젝트 ID 는 어느 파일에도 없음 · 정적 검사 6번이 자격증명·실계정을 자동으로 막는다)
+
+### 기획자님 할 일
+1. **저장소 공개 여부 결정** — 위 ⚠️ (푸시·PR 이 여기에 걸려 있다)
+2. **버전 6 배포** — 지금은 수동: Apps Script 편집기에 `apps-script/Code.gs`·`index.html` 붙여넣기 → 배포 관리 → 새 버전. `appsscript.json` 은 변경 없음
+3. **자동 배포로 넘어가려면**(가이드 §10): 로컬 PC 에 Node LTS 설치 → `npm install` → Apps Script API 켜기 → `npx clasp login` → 배포 ID 확인 → GitHub Secret 3개 등록(`CLASPRC_JSON`·`CLASP_SCRIPT_ID`·`CLASP_DEPLOYMENT_ID`)
+4. 시트 메뉴 **[팀 보드 → 드롭다운 목록 새로고침]** 1회 → `팀원` 탭 F열(이메일)이 생긴다. 팀원 이메일을 넣으면 "내 주간 공수" 가 자동으로 본인을 알아본다(안 넣으면 이름 선택)
+5. **확인 필요 2~9번**(2026-09-13 체크인 표) 여전히 대기
+
+### 다음 턴 후보
+① C4 미입력 항목 유도 + C5 주간 현황 복사(이번에 제외) ② 등록 창구 `doPost` + 토큰 ③ MICE 커뮤니케이터 연동 ④ mock 을 실시트와 같은 역할 8종으로 올려 파생 카탈로그를 실렌더에서 전수 검증(지금은 단위 검증 + 화면 확인으로 대체)
