@@ -215,9 +215,12 @@ async function main() {
   fs.mkdirSync(OUT_DIR, { recursive: true });
 
   const userDir = fs.mkdtempSync(path.join(os.tmpdir(), 'teamboard-chrome-'));
+  // 리눅스(컨테이너·CI)에서는 root 로 도는 경우가 많아 --no-sandbox 가 없으면 브라우저가 뜨지 않는다. 윈도우는 그대로.
+  const sandboxArgs = process.platform === 'win32' ? [] : ['--no-sandbox', '--disable-dev-shm-usage'];
   const proc = spawn(browser, [
     '--headless=new', `--remote-debugging-port=${PORT}`, `--user-data-dir=${userDir}`,
     '--no-first-run', '--no-default-browser-check', '--disable-gpu', '--hide-scrollbars',
+    ...sandboxArgs,
     '--window-size=1920,1080', '--allow-file-access-from-files', 'about:blank',
   ], { stdio: 'ignore' });
 
@@ -1053,6 +1056,345 @@ async function main() {
     if (!(s19.reset.rows.length === 2 && s19.reset.part === '' && s19.reset.stored === '')) fail('파트 필터: "전체" 복귀 실패: ' + JSON.stringify(s19.reset));
     else ok('파트 필터: "전체" → 2행 복귀 · localStorage 비움');
     await evalJson(cdp, `(window.TeamBoard.goTab('E'), true)`);
+
+    // ======================================================================
+    // 6턴 쓰기 게이트 (3-20 ~ 3-26) — 내 주간 공수 · 배정 가드/되돌리기 · 마일스톤 일괄 처리 · 파생 카탈로그
+    // ======================================================================
+
+    // ---- 3-20 내 주간 공수 — 머리말 바로가기 → 카드 → 행 자동 제시 → 저장 → E 미기록 ----
+    console.log('\n[3-20] 내 주간 공수 (행 자동 제시 · 합계/경고 · 저장 · E 미기록)');
+    const myExpr = (member, week) => `(() => {
+      const card = document.querySelector('#my-week-card');
+      const rows = [...document.querySelectorAll('#my-week-card tbody tr[data-my-item]')];
+      const d = window.TeamBoard.state.data;
+      const w = window.TeamBoard.metrics.warnings(d, d.meta.today);
+      const warnEl = document.querySelector('#my-week-card [data-my-warn]');
+      return {
+        tab: window.TeamBoard.state.tab, card: !!card,
+        fixed: ((document.querySelector('#my-week-card [data-my-member]') || {}).textContent || '').replace(/\\s+/g, ' ').trim(),
+        memberSelect: !!document.getElementById('my-member'),
+        week: (document.getElementById('my-week') || {}).value || '',
+        rows: rows.length,
+        sources: rows.map(r => r.getAttribute('data-my-source')),
+        codes: rows.map(r => r.getAttribute('data-my-item')),
+        mds: rows.map(r => (r.querySelector('[data-field="md"]') || {}).value || ''),
+        memos: rows.map(r => (r.querySelector('[data-field="memo"]') || {}).value || ''),
+        badge: ((document.querySelector('#my-week-card [data-my-badge]') || {}).textContent || '').trim(),
+        total: ((document.getElementById('my-total') || {}).textContent || '').trim(),
+        warn: warnEl && !warnEl.hidden ? warnEl.textContent.trim() : '',
+        logs: d.effortLogs.filter(l => l.member === ${JSON.stringify(member)} && l.week === ${JSON.stringify(week)}),
+        missing: w.missingLog.map(m => m.member),
+        missingDom: [...document.querySelectorAll('[data-warning="missingLog"] [data-item]')].length,
+        linkTodo: !!document.querySelector('#my-week-link.is-todo'),
+        stored: (() => { try { return window.localStorage.getItem('tb.myMember'); } catch (e) { return 'n/a'; } })(),
+      };
+    })()`;
+    const MY = myExpr('팀원1', baseWeek);
+    const MY5 = myExpr('팀원5', baseWeek);
+    await evalJson(cdp, `(window.TeamBoard.goTab('E'), true)`);
+    await sleep(150);
+    const s20 = { link: await evalJson(cdp, `!!document.querySelector('#my-week-link')`) };
+    const missing0 = await evalJson(cdp, `[...document.querySelectorAll('[data-warning="missingLog"] [data-item]')].length`);
+    await clickSel(cdp, '#my-week-link');
+    await sleep(400);
+    s20.opened = await evalJson(cdp, MY);
+    if (!(s20.link && s20.opened.tab === 'C' && s20.opened.card)) fail('내 주간 공수: 머리말 바로가기로 C 화면 카드가 열리지 않음: ' + JSON.stringify({ link: s20.link, tab: s20.opened.tab, card: s20.opened.card }));
+    else ok('내 주간 공수: 머리말 [내 주간 공수] → C 화면 카드 열림');
+    if (!(/팀원1/.test(s20.opened.fixed) && !s20.opened.memberSelect && s20.opened.week === baseWeek)) fail('내 주간 공수: meta.userMember 고정 표시·기준 주차 기본값 실패: ' + JSON.stringify(s20.opened));
+    else ok(`내 주간 공수: "${s20.opened.fixed}" 고정 표시(선택 상자 없음) · 기준 주차 ${s20.opened.week}`);
+    if (!(s20.opened.rows === 6 && s20.opened.sources.filter(x => x === '배정').length === 3 && s20.opened.sources.filter(x => x === '공통').length === 3 &&
+          s20.opened.mds.filter(Boolean).length === 4)) fail('내 주간 공수: 행 자동 제시(배정 3 · 공통 3 · 기록값 4) 실패: ' + JSON.stringify({ rows: s20.opened.rows, sources: s20.opened.sources, mds: s20.opened.mds }));
+    else ok(`내 주간 공수: 행 ${s20.opened.rows}개 자동 제시(배정 3 · 공통 3) · 기록값 4개 채워짐 · ${s20.opened.total}`);
+    // 5.0 초과 경고 — 입력 중에도 바로 뜬다(Schema.validateEffortWeek 문구 그대로)
+    await evalJson(cdp, `(() => { const n = document.querySelector('#my-week-card [data-field="md"]'); n.value = '6'; n.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`);
+    await sleep(150);
+    s20.overWarn = await evalJson(cdp, `(() => { const w = document.querySelector('#my-week-card [data-my-warn]'); return { shown: !!w && !w.hidden, text: w ? w.textContent.trim() : '', total: (document.getElementById('my-total') || {}).textContent.trim() }; })()`);
+    if (!(s20.overWarn.shown && /5\.0/.test(s20.overWarn.text) && /넘습니다/.test(s20.overWarn.text))) fail('내 주간 공수: 합계 5.0 초과 경고 문구가 뜨지 않음: ' + JSON.stringify(s20.overWarn));
+    else ok(`내 주간 공수: 합계 초과 경고 "${s20.overWarn.text.slice(0, 40)}…" · ${s20.overWarn.total}`);
+    // 한 행에 값을 넣고 저장 → 그 주 기록이 통째로 교체된다
+    await evalJson(cdp, `(() => { const ins = [...document.querySelectorAll('#my-week-card [data-field="md"]')];
+      ins.forEach(n => { n.value = ''; n.dispatchEvent(new Event('input', { bubbles: true })); n.dispatchEvent(new Event('change', { bubbles: true })); });
+      const r = document.querySelector('#my-week-card tbody tr[data-my-item]');
+      const md = r.querySelector('[data-field="md"]'); md.value = '2.5'; md.dispatchEvent(new Event('input', { bubbles: true })); md.dispatchEvent(new Event('change', { bubbles: true }));
+      const memo = r.querySelector('[data-field="memo"]'); memo.value = '게이트 주간 기록'; memo.dispatchEvent(new Event('input', { bubbles: true })); memo.dispatchEvent(new Event('change', { bubbles: true }));
+      return ins.length; })()`);
+    report.screenshots.push(await screenshot(cdp, path.join(OUT_DIR, 'my-week.png'), 1920));
+    await clickSel(cdp, '#my-week-card [data-action="my-save"]');
+    await sleep(600);
+    s20.afterSave = await evalJson(cdp, MY);
+    if (!(s20.afterSave.logs.length === 1 && Number(s20.afterSave.logs[0].md) === 2.5 && s20.afterSave.logs[0].memo === '게이트 주간 기록' && s20.afterSave.logs[0].loggedAt)) fail('내 주간 공수: 저장된 행 내용 불일치: ' + JSON.stringify(s20.afterSave.logs));
+    else ok(`내 주간 공수: 저장 → ${s20.afterSave.logs[0].projectId} 2.5 M/D · 메모 · 기록일시 ${s20.afterSave.logs[0].loggedAt} (그 주 4행 → 1행 교체)`);
+
+    // 이메일이 없는 팀원(이름 선택 + 브라우저 기억) 경로 — 기준 주차 기록을 비우면 E 미기록에 오르고, 저장하면 다시 빠진다
+    await evalJson(cdp, `(() => { window.TeamBoard.state.data.meta.userMember = ''; window.TeamBoard.actions.openMyWeek('', ${JSON.stringify(baseWeek)}); window.TeamBoard.render(); return true; })()`);
+    await sleep(250);
+    s20.pickMode = await evalJson(cdp, `(() => ({ select: !!document.getElementById('my-member'), fixed: !!document.querySelector('#my-week-card [data-my-member]') }))()`);
+    await setInput(cdp, '#my-member', '팀원5');
+    await sleep(350);
+    s20.picked = await evalJson(cdp, MY5);
+    if (!(s20.pickMode.select && !s20.pickMode.fixed && s20.picked.stored === '팀원5' && s20.picked.rows > 0)) fail('내 주간 공수: 이름 선택 경로(select · localStorage 기억 · 행 제시) 실패: ' + JSON.stringify({ mode: s20.pickMode, stored: s20.picked.stored, rows: s20.picked.rows }));
+    else ok(`내 주간 공수: 이름이 자동 인식되지 않으면 선택 상자 · 고른 이름 기억(localStorage tb.myMember = "${s20.picked.stored}") · 행 ${s20.picked.rows}개`);
+    await evalJson(cdp, `(() => { [...document.querySelectorAll('#my-week-card [data-field="md"]')].forEach(n => { n.value = ''; n.dispatchEvent(new Event('input', { bubbles: true })); n.dispatchEvent(new Event('change', { bubbles: true })); }); return true; })()`);
+    await clickSel(cdp, '#my-week-card [data-action="my-save"]');
+    await sleep(600);
+    s20.afterClear = await evalJson(cdp, MY5);
+    if (!(s20.afterClear.logs.length === 0 && s20.afterClear.missing.indexOf('팀원5') >= 0 && s20.afterClear.missingDom === missing0 + 1 &&
+          /기록 없음/.test(s20.afterClear.badge) && s20.afterClear.linkTodo)) fail('내 주간 공수: 값을 비우고 저장 → 기록 삭제·E 미기록 +1 실패: ' + JSON.stringify({ logs: s20.afterClear.logs.length, missing: s20.afterClear.missing, dom: s20.afterClear.missingDom, badge: s20.afterClear.badge }));
+    else ok(`내 주간 공수: 값 비우고 저장 → 그 주 기록 0행 · E 미기록 ${missing0} → ${s20.afterClear.missingDom}건(팀원5 추가) · 배지 "${s20.afterClear.badge}"`);
+    await evalJson(cdp, `(() => { const r = document.querySelector('#my-week-card tbody tr[data-my-item]');
+      const md = r.querySelector('[data-field="md"]'); md.value = '3'; md.dispatchEvent(new Event('input', { bubbles: true })); md.dispatchEvent(new Event('change', { bubbles: true }));
+      return true; })()`);
+    await clickSel(cdp, '#my-week-card [data-action="my-save"]');
+    await sleep(600);
+    s20.afterRefill = await evalJson(cdp, MY5);
+    report.writePaths.myWeek = s20;
+    if (!(s20.afterRefill.logs.length === 1 && s20.afterRefill.missing.indexOf('팀원5') < 0 && s20.afterRefill.missingDom === missing0 &&
+          /기록 있음/.test(s20.afterRefill.badge) && !s20.afterRefill.linkTodo)) fail('내 주간 공수: 저장 후 E 미기록이 줄지 않음: ' + JSON.stringify({ logs: s20.afterRefill.logs, missing: s20.afterRefill.missing, dom: s20.afterRefill.missingDom, badge: s20.afterRefill.badge }));
+    else ok(`내 주간 공수: 저장 → E 미기록 ${s20.afterClear.missingDom} → ${s20.afterRefill.missingDom}건(팀원5 빠짐) · 머리말 바로가기 표시 해제 · 배지 "${s20.afterRefill.badge}"`);
+    // 원래대로(로그인 계정 = 팀원1)
+    await evalJson(cdp, `(() => { window.TeamBoard.state.data.meta.userMember = '팀원1'; window.TeamBoard.actions.openMyWeek('팀원1', ${JSON.stringify(baseWeek)}); window.TeamBoard.render(); return true; })()`);
+    await sleep(250);
+
+    // ---- 3-21 [지난주 값 복사] — 직전 주차 기록을 입력칸에 채운다(저장은 별도) ----
+    console.log('\n[3-21] 지난주 값 복사');
+    const prevWeek = await evalJson(cdp, `window.TeamBoard.metrics.addDays(${JSON.stringify(baseWeek)}, -7)`);
+    const s21 = { prevWeek, before: await evalJson(cdp, MY) };
+    s21.prevLogs = await evalJson(cdp, `window.TeamBoard.state.data.effortLogs.filter(l => l.member === '팀원1' && l.week === ${JSON.stringify(prevWeek)}).map(l => ({ projectId: l.projectId, md: l.md, memo: l.memo }))`);
+    await clickSel(cdp, '#my-week-card [data-action="my-copy-prev"]');
+    await sleep(400);
+    s21.after = await evalJson(cdp, MY);
+    report.writePaths.copyPrevWeek = s21;
+    const wanted = {};
+    s21.prevLogs.forEach((l) => { wanted[l.projectId] = String(l.md); });
+    const gotAll = Object.keys(wanted).every((code) => {
+      const i = s21.after.codes.indexOf(code);
+      return i >= 0 && s21.after.mds[i] === wanted[code];
+    });
+    const memoOk = s21.prevLogs.every((l) => { const i = s21.after.codes.indexOf(l.projectId); return i >= 0 && s21.after.memos[i] === (l.memo || ''); });
+    if (!(s21.prevLogs.length >= 2 && gotAll && memoOk)) fail(`지난주 값 복사: ${prevWeek} 기록 ${s21.prevLogs.length}행이 입력칸에 채워지지 않음: ` + JSON.stringify({ wanted, codes: s21.after.codes, mds: s21.after.mds }));
+    else ok(`지난주 값 복사: ${prevWeek} 기록 ${s21.prevLogs.length}행이 입력칸에 채워짐(합계 표시 ${s21.after.total})`);
+    if (s21.after.logs.length !== 1) fail('지난주 값 복사: 복사만 했는데 저장까지 됨(공수기록이 바뀜): ' + JSON.stringify(s21.after.logs));
+    else ok('지난주 값 복사: 입력칸만 채우고 저장은 하지 않음(공수기록 그대로)');
+
+    // ---- 3-22 배정 저장 가드 — 행을 지우고 저장 → 경고 → [취소] → 행 수 원복 ----
+    console.log('\n[3-22] 배정 저장 가드 (경고 → 취소 → 행 복원)');
+    const PG = 'P-2026-002';
+    const PGJ = JSON.stringify(PG);
+    await evalJson(cdp, `(window.TeamBoard.goTab('B'), true)`);
+    await evalJson(cdp, `(() => { const s = document.getElementById('assign-project'); s.value = ${PGJ}; s.dispatchEvent(new Event('change', { bubbles: true })); return s.value; })()`);
+    await sleep(300);
+    const ASSIGN = `(() => ({
+      editRows: window.TeamBoard.state.editRows.length,
+      domRows: document.querySelectorAll('#screen-B tr.tb-edit-row').length,
+      saved: window.TeamBoard.state.data.assignments.filter(a => a.projectId === ${PGJ}).length,
+      manual: window.TeamBoard.state.data.assignments.filter(a => a.projectId === ${PGJ} && a.note !== window.TeamBoard.schema.AUTO_ASSIGN_NOTE).length,
+      auto: window.TeamBoard.state.data.assignments.filter(a => a.projectId === ${PGJ} && a.note === window.TeamBoard.schema.AUTO_ASSIGN_NOTE).length,
+      ids: window.TeamBoard.state.data.assignments.filter(a => a.projectId === ${PGJ}).map(a => a.id).sort(),
+      guard: !!document.querySelector('#screen-B [data-assign-guard]'),
+      guardText: ((document.querySelector('#screen-B [data-assign-guard]') || {}).textContent || '').replace(/\\s+/g, ' ').trim().slice(0, 150),
+      guardLines: document.querySelectorAll('#screen-B [data-assign-guard] li').length,
+      saveDisabled: (document.querySelector('#screen-B [data-action="save-assignments"]') || {}).disabled,
+    }))()`;
+    const s22 = { projectId: PG, before: await evalJson(cdp, ASSIGN) };
+    const cutIdx = await evalJson(cdp, `(() => { const rows = window.TeamBoard.state.editRows; for (let i = rows.length - 1; i >= 0; i--) { if (rows[i].note !== window.TeamBoard.schema.AUTO_ASSIGN_NOTE) return i; } return -1; })()`);
+    s22.cutMember = await evalJson(cdp, `(window.TeamBoard.state.editRows[${cutIdx}] || {}).member || ''`);
+    await clickSel(cdp, `#screen-B [data-action="remove-row"][data-index="${cutIdx}"]`);
+    await sleep(200);
+    await clickSel(cdp, '#screen-B [data-action="save-assignments"]');
+    await sleep(350);
+    s22.warned = await evalJson(cdp, ASSIGN);
+    report.screenshots.push(await screenshot(cdp, path.join(OUT_DIR, 'assign-guard.png'), 1920));
+    await clickSel(cdp, '#screen-B [data-action="assign-guard-no"]');
+    await sleep(350);
+    s22.cancelled = await evalJson(cdp, ASSIGN);
+    report.writePaths.assignGuard = s22;
+    if (!(s22.warned.guard && s22.warned.guardLines === 1 && new RegExp(s22.cutMember).test(s22.warned.guardText) && /1행이 사라집니다/.test(s22.warned.guardText) && s22.warned.saveDisabled === true)) fail('배정 가드: 경고 박스·사라질 행 내역이 뜨지 않음: ' + JSON.stringify(s22.warned));
+    else ok(`배정 가드: 경고 "${s22.warned.guardText.slice(0, 60)}…" · 사라질 행 ${s22.warned.guardLines}건(${s22.cutMember})`);
+    if (s22.warned.saved !== s22.before.saved) fail(`배정 가드: 확인 전에 이미 저장됨 (${s22.before.saved} → ${s22.warned.saved})`);
+    else ok(`배정 가드: 확인 전에는 저장되지 않음(배정 ${s22.warned.saved}행 유지)`);
+    if (!(!s22.cancelled.guard && s22.cancelled.editRows === s22.before.editRows && s22.cancelled.domRows === s22.before.domRows && s22.cancelled.saved === s22.before.saved)) fail('배정 가드: [취소] 후 행 수가 원복되지 않음: ' + JSON.stringify({ before: s22.before, cancelled: s22.cancelled }));
+    else ok(`배정 가드: [취소] → 편집 행 ${s22.warned.editRows} → ${s22.cancelled.editRows}행 원복 · 아무것도 바뀌지 않음`);
+
+    // ---- 3-23 되돌리기 — 배정 저장 1건을 되돌려 행 수가 저장 전으로 ----
+    console.log('\n[3-23] 되돌리기 (배정 저장 1건)');
+    const s23 = { projectId: PG, before: s22.before };
+    await clickSel(cdp, `#screen-B [data-action="remove-row"][data-index="${cutIdx}"]`);
+    await sleep(150);
+    await clickSel(cdp, '#screen-B [data-action="save-assignments"]');
+    await sleep(300);
+    await clickSel(cdp, '#screen-B [data-action="assign-guard-yes"]');
+    await sleep(700);
+    s23.afterSave = await evalJson(cdp, ASSIGN);
+    if (!(s23.afterSave.manual === s22.before.manual - 1 && s23.afterSave.ids.indexOf('A-0008') < 0)) fail(`되돌리기 준비: [계속 저장] 뒤 수동 행이 1행 줄지 않음 (${s22.before.manual} → ${s23.afterSave.manual})`);
+    else ok(`되돌리기 준비: [계속 저장] → 수동 배정 ${s22.before.manual} → ${s23.afterSave.manual}행 (5턴 규칙대로 자동 행 ${s23.afterSave.auto}행이 대신 생김)`);
+    await evalJson(cdp, `(window.TeamBoard.goTab('E'), true)`);
+    await sleep(300);
+    s23.index = await evalJson(cdp, `window.TeamBoard.state.data.history.findIndex(h => h.sheet === '배정' && h.action === '저장' && h.key === ${PGJ} && /배정 행 교체/.test(h.summary || ''))`);
+    s23.cell = await evalJson(cdp, `(() => { const c = document.querySelector('#history-list [data-history-row="${s23.index}"] .tb-restore-cell');
+      return { button: !!(c && c.querySelector('[data-action="restore-history"]')), note: c ? (c.querySelector('.tb-restore-note') || {}).textContent || '' : '' }; })()`);
+    await clickSel(cdp, `#history-list [data-history-row="${s23.index}"] [data-action="restore-history"]`);
+    await sleep(250);
+    s23.confirm = await evalJson(cdp, `(() => ({ shown: !!document.querySelector('#history-list [data-action="confirm-yes"][data-confirm-action="restore-history"]'),
+      assignments: window.TeamBoard.state.data.assignments.filter(a => a.projectId === ${PGJ}).length }))()`);
+    await clickSel(cdp, `#history-list [data-action="confirm-yes"][data-confirm-action="restore-history"][data-project="${s23.index}"]`);
+    await sleep(700);
+    s23.after = await evalJson(cdp, ASSIGN);
+    s23.after.history0 = await evalJson(cdp, `(window.TeamBoard.state.data.history || [])[0] || null`);
+    // 되돌릴 수 없는 이력(프로젝트 삭제)은 버튼 대신 사유가 회색 글씨로
+    s23.blocked = await evalJson(cdp, `(() => { const d = window.TeamBoard.state.data;
+      const i = d.history.findIndex(h => h.sheet === '프로젝트' && h.action === '삭제');
+      if (i < 0 || i >= 30) return null;
+      const c = document.querySelector('#history-list [data-history-row="' + i + '"] .tb-restore-cell');
+      return { index: i, button: !!(c && c.querySelector('[data-action="restore-history"]')), reason: c ? (c.querySelector('.tb-restore-blocked') || {}).textContent || '' : '' }; })()`);
+    report.writePaths.restoreHistory = s23;
+    if (!(s23.cell.button && /되돌립니다/.test(s23.cell.note))) fail('되돌리기: 최근 변경 항목에 [되돌리기] 버튼·안내가 없음: ' + JSON.stringify(s23.cell));
+    else ok(`되돌리기: 버튼 표시 · 안내 "${s23.cell.note.slice(0, 50)}"`);
+    if (!(s23.confirm.shown && s23.confirm.assignments === s23.afterSave.saved)) fail('되돌리기: 1회 클릭에 확인 단계 없이 실행됨: ' + JSON.stringify(s23.confirm));
+    else ok('되돌리기: 1회 클릭 → 확인 단계 표시 · 아직 미실행');
+    if (!(String(s23.after.ids) === String(s22.before.ids) && s23.after.manual === s22.before.manual && s23.after.auto === 0 &&
+          s23.after.editRows === s22.before.editRows && s23.after.history0 && s23.after.history0.action === '되돌림')) fail('되돌리기: [확인] 후 행 구성이 저장 전으로 돌아오지 않음: ' + JSON.stringify({ before: s22.before, after: s23.after }));
+    else ok(`되돌리기: [확인] → 배정 ${s23.afterSave.ids.join(',')} → ${s23.after.ids.join(',')} (저장 전 ${s23.after.manual}행 복원) · 변경이력 "되돌림"`);
+    if (s23.blocked && (s23.blocked.button || !/되돌릴 수 없습니다/.test(s23.blocked.reason))) fail('되돌리기: 프로젝트 삭제 이력에 버튼 대신 사유가 표시되지 않음: ' + JSON.stringify(s23.blocked));
+    else if (s23.blocked) ok(`되돌리기 불가 표시: 프로젝트 삭제 → "${s23.blocked.reason.slice(0, 50)}…"`);
+
+    // ---- 3-24 마일스톤 일괄 완료 처리 — 2건 선택 → 완료 처리 → 지연 −2 ----
+    console.log('\n[3-24] 마일스톤 일괄 완료 처리');
+    const PB = 'P-2026-004';
+    const BULK_TARGETS = [['답사', '2026-08-05'], ['랜딩페이지 컨펌', '2026-08-06'], ['운영계획서 확정', '2026-08-07']];
+    await evalJson(cdp, `(window.TeamBoard.state.selectedProject = ${JSON.stringify(PB)}, window.TeamBoard.render(), window.TeamBoard.goTab('A'), true)`);
+    await sleep(200);
+    for (const [name, due] of BULK_TARGETS) {                        // 지연 마일스톤을 만들어 둔다(실제 편집 폼 경로)
+      await clickSel(cdp, `#screen-A [data-action="open-form"][data-table="milestones"][data-mode="edit"][data-key="${PB}|${name}"]`);
+      await sleep(200);
+      await setInput(cdp, '#edit-form [data-form-field="due"]', due);
+      await clickSel(cdp, '#edit-form [data-action="form-save"]');
+      await sleep(400);
+    }
+    await evalJson(cdp, `(window.TeamBoard.goTab('E'), true)`);
+    await sleep(300);
+    const DELAY = `(() => ({
+      rows: [...document.querySelectorAll('[data-warning="delayed"] [data-bulk-row]')].map(r => r.getAttribute('data-bulk-row')),
+      checked: [...document.querySelectorAll('[data-warning="delayed"] [data-action="bulk-toggle"]')].filter(n => n.checked).length,
+      bar: !!document.querySelector('[data-warning="delayed"] [data-bulk-bar]'),
+      count: ((document.querySelector('[data-warning="delayed"] [data-bulk-count]') || {}).textContent || '').trim(),
+      panel: (document.querySelector('[data-warning="delayed"] [data-bulk-panel]') || {}).getAttribute ? document.querySelector('[data-warning="delayed"] [data-bulk-panel]').getAttribute('data-bulk-panel') : '',
+      done: (document.getElementById('bulk-done') || {}).value || '',
+      preview: ((document.querySelector('[data-warning="delayed"] [data-bulk-preview]') || {}).textContent || '').trim(),
+      confirmShown: !!document.querySelector('[data-warning="delayed"] [data-action="confirm-yes"][data-confirm-action="bulk-run"]'),
+      selectAll: ((document.querySelector('[data-warning="delayed"] [data-action="bulk-all"]') || {}).textContent || '').trim(),
+    }))()`;
+    const s24 = { setup: BULK_TARGETS.map(([n]) => n), start: await evalJson(cdp, DELAY) };
+    if (s24.start.rows.length !== 3) fail(`일괄 완료: 지연 마일스톤 3건을 만들지 못함 (${s24.start.rows.length}건): ` + JSON.stringify(s24.start.rows));
+    else ok(`일괄 완료: 지연 마일스톤 ${s24.start.rows.length}건 준비(체크상자 ${s24.start.rows.length}개)`);
+    await clickSel(cdp, '[data-warning="delayed"] [data-action="bulk-all"]');       // 전체 선택
+    await sleep(250);
+    s24.all = await evalJson(cdp, DELAY);
+    const lastKey = s24.start.rows[2];
+    await clickSel(cdp, `[data-warning="delayed"] [data-action="bulk-toggle"][data-key="${lastKey}"]`);   // 하나 해제 → 2건
+    await sleep(250);
+    s24.two = await evalJson(cdp, DELAY);
+    if (!(/3건 선택됨/.test(s24.all.count) && s24.all.checked === 3 && s24.all.selectAll === '선택 해제')) fail('일괄 완료: [전체 선택] 동작 실패: ' + JSON.stringify(s24.all));
+    else ok(`일괄 완료: [전체 선택] → "${s24.all.count}" · 버튼 "${s24.all.selectAll}"`);
+    if (!(/2건 선택됨/.test(s24.two.count) && s24.two.checked === 2 && s24.two.bar)) fail('일괄 완료: 체크 해제 후 "2건 선택됨" 액션 바가 아님: ' + JSON.stringify(s24.two));
+    else ok(`일괄 완료: 체크상자 1개 해제 → "${s24.two.count}" · 하단 액션 바 표시`);
+    await clickSel(cdp, '[data-warning="delayed"] [data-action="bulk-mode"][data-mode="complete"]');
+    await sleep(250);
+    s24.panel = await evalJson(cdp, DELAY);
+    report.screenshots.push(await screenshot(cdp, path.join(OUT_DIR, 'bulk-milestone.png'), 1920));
+    if (!(s24.panel.panel === 'complete' && s24.panel.done === '2026-09-10' && /완료일/.test(s24.panel.preview))) fail('일괄 완료: 완료일 입력(기본 오늘)·미리보기 실패: ' + JSON.stringify(s24.panel));
+    else ok(`일괄 완료: [완료 처리] → 완료일 기본값 ${s24.panel.done} · 미리보기 "${s24.panel.preview.slice(0, 50)}…"`);
+    await clickSel(cdp, '[data-warning="delayed"] [data-action="bulk-run"]');
+    await sleep(250);
+    s24.confirm = await evalJson(cdp, DELAY);
+    s24.beforeRun = await evalJson(cdp, `window.TeamBoard.state.data.milestones.filter(m => m.projectId === ${JSON.stringify(PB)} && m.done).length`);
+    if (!(s24.confirm.confirmShown && s24.confirm.rows.length === 3)) fail('일괄 완료: 1회 클릭에 확인 단계 없이 실행됨: ' + JSON.stringify(s24.confirm));
+    else ok('일괄 완료: 1회 클릭 → 확인 단계 표시 · 아직 미실행');
+    await clickSel(cdp, '[data-warning="delayed"] [data-action="confirm-yes"][data-confirm-action="bulk-run"]');
+    await sleep(800);
+    s24.after = await evalJson(cdp, DELAY);
+    s24.rows = await evalJson(cdp, `window.TeamBoard.state.data.milestones.filter(m => m.projectId === ${JSON.stringify(PB)}).map(m => ({ name: m.name, due: m.due, done: m.done }))`);
+    s24.history0 = await evalJson(cdp, `(window.TeamBoard.state.data.history || [])[0] || null`);
+    report.writePaths.bulkComplete = s24;
+    const doneNames = s24.rows.filter((m) => m.done === '2026-09-10').map((m) => m.name).sort().join(',');
+    if (!(s24.after.rows.length === 1 && doneNames === '답사,랜딩페이지 컨펌')) fail(`일괄 완료: [확인] 후 지연 3 → 1 · 완료 2건이 아님 (지연 ${s24.after.rows.length} · 완료 "${doneNames}")`);
+    else ok(`일괄 완료: [확인] → 지연 ${s24.start.rows.length} → ${s24.after.rows.length}건 · 완료일 2026-09-10 기록(${doneNames})`);
+    if (!(s24.history0 && s24.history0.action === '저장' && s24.history0.sheet === '마일스톤' && /일괄 완료 처리/.test(s24.history0.summary || ''))) fail('일괄 완료: 변경이력 묶음 1건이 남지 않음: ' + JSON.stringify(s24.history0));
+    else ok('일괄 완료: 변경이력 묶음 1건("일괄 완료 처리")');
+    if (s24.after.checked !== 0 || s24.after.bar) fail('일괄 완료: 처리 후 선택·액션 바가 남아 있음');
+    else ok('일괄 완료: 처리 후 선택 해제 · 액션 바 닫힘');
+
+    // ---- 3-25 예정일 일괄 조정 (+7일) ----
+    console.log('\n[3-25] 예정일 일괄 조정 (+7일)');
+    const s25 = { before: await evalJson(cdp, `window.TeamBoard.state.data.milestones.filter(m => m.projectId === ${JSON.stringify(PB)} && !m.done).map(m => ({ name: m.name, due: m.due }))`) };
+    await clickSel(cdp, '[data-warning="delayed"] [data-action="bulk-all"]');
+    await sleep(250);
+    await clickSel(cdp, '[data-warning="delayed"] [data-action="bulk-mode"][data-mode="shift"]');
+    await sleep(250);
+    s25.panel = await evalJson(cdp, DELAY);
+    await setInput(cdp, '#bulk-days', '7');
+    await sleep(250);
+    s25.filled = await evalJson(cdp, DELAY);
+    await clickSel(cdp, '[data-warning="delayed"] [data-action="bulk-run"]');
+    await sleep(250);
+    s25.confirm = await evalJson(cdp, DELAY);
+    await clickSel(cdp, '[data-warning="delayed"] [data-action="confirm-yes"][data-confirm-action="bulk-run"]');
+    await sleep(800);
+    s25.after = await evalJson(cdp, `(() => { const d = window.TeamBoard.state.data; return {
+      rows: d.milestones.filter(m => m.projectId === ${JSON.stringify(PB)} && !m.done).map(m => ({ name: m.name, due: m.due })),
+      history0: (d.history || [])[0] || null }; })()`);
+    report.writePaths.bulkShift = s25;
+    const shifted = s25.after.rows.find((m) => m.name === '운영계획서 확정');
+    if (!(s25.panel.panel === 'shift' && s25.confirm.confirmShown)) fail('예정일 조정: 입력 패널·2단계 확인이 뜨지 않음: ' + JSON.stringify({ panel: s25.panel.panel, confirm: s25.confirm.confirmShown }));
+    else ok(`예정일 조정: [예정일 조정] → 며칠 미루기 입력 · 미리보기 "${s25.filled.preview.slice(0, 50)}…" · 2단계 확인`);
+    if (!(shifted && shifted.due === '2026-08-14')) fail('예정일 조정: 운영계획서 확정 예정일이 +7일(2026-08-14)이 되지 않음: ' + JSON.stringify(s25.after.rows));
+    else ok(`예정일 조정: [확인] → "운영계획서 확정" 예정일 2026-08-07 → ${shifted.due} (+7일)`);
+    if (!(s25.after.history0 && /일괄 예정일 조정/.test(s25.after.history0.summary || ''))) fail('예정일 조정: 변경이력 묶음 1건이 없음: ' + JSON.stringify(s25.after.history0));
+    else ok('예정일 조정: 변경이력 묶음 1건("일괄 예정일 조정")');
+
+    // ---- 3-26 파생 카탈로그(D22) — 파트 선택 목록이 역할 목록을 따르고, 블럭 없는 파트는 공통 블럭으로 채워진다 ----
+    console.log('\n[3-26] 파생 카탈로그 (블럭 없는 파트 → 공통 블럭)');
+    const s26 = await evalJson(cdp, `(() => {
+      const TB = window.TeamBoard, S = TB.schema, d = TB.state.data;
+      const roles = (d.settings.roles || []).slice();
+      const base = S.blocksWithFallback(d.blocks, d.settings);
+      const plus = S.blocksWithFallback(d.blocks, { roles: roles.concat(['운영총괄']) });
+      const partsOf = (list) => { const o = {}; list.forEach(b => { o[b.part] = (o[b.part] || 0) + 1; }); return o; };
+      const derivedBlocks = plus.list.filter(b => b.part === '운영총괄').map(b => b.block);
+      return {
+        roles, baseDerived: base.derivedParts, baseCovers: roles.every(r => base.list.some(b => b.part === r)),
+        plusDerived: plus.derivedParts, plusCount: plus.list.length - base.list.length,
+        derivedBlocks, generic: S.GENERIC_BLOCKS.map(g => g.block),
+        parts: partsOf(plus.list),
+      };
+    })()`);
+    report.writePaths.derivedCatalog = s26;
+    if (!(s26.baseCovers && s26.baseDerived.length === 0)) fail('파생 카탈로그: 지금 역할 목록(6종)은 전부 블럭이 있어야 하고 파생이 없어야 함: ' + JSON.stringify({ derived: s26.baseDerived, covers: s26.baseCovers }));
+    else ok(`파생 카탈로그: 역할 ${s26.roles.length}종 모두 블럭 있음 · 파생 0`);
+    if (!(s26.plusDerived.indexOf('운영총괄') >= 0 && s26.plusCount === s26.generic.length && String(s26.derivedBlocks) === String(s26.generic))) fail('파생 카탈로그: 역할 "운영총괄" 추가 시 공통 블럭 5종이 파생되지 않음: ' + JSON.stringify(s26));
+    else ok(`파생 카탈로그: 역할 "운영총괄" 추가 → 공통 블럭 ${s26.plusCount}종 파생(${s26.derivedBlocks.join(' · ')})`);
+    // 화면: 블럭 추가 창의 파트 선택 목록이 역할 목록을 그대로 따른다 + 파생 파트면 안내 문구
+    await evalJson(cdp, `(() => { const TB = window.TeamBoard; TB.state.selectedProject = 'P-2026-004'; TB.state.data.settings.roles = (TB.state.data.settings.roles || []).concat(['운영총괄']); TB.render(); TB.goTab('A'); return true; })()`);
+    await sleep(250);
+    await clickSel(cdp, '#screen-A [data-action="toggle-items"][data-key="P-2026-004|답사"]');
+    await sleep(250);
+    await clickSel(cdp, '#screen-A [data-action="block-picker"][data-key="P-2026-004|답사"]');
+    await sleep(300);
+    const s26b = { before: await evalJson(cdp, `(() => { const s = document.getElementById('block-part'); return { options: s ? [...s.options].map(o => o.value) : [], picked: s ? s.value : '' }; })()`) };
+    await setInput(cdp, '#block-part', '운영총괄');
+    await sleep(300);
+    s26b.derived = await evalJson(cdp, `(() => ({
+      chips: [...document.querySelectorAll('#screen-A .tb-block-chip')].map(c => (c.getAttribute('data-block') || '')),
+      note: ((document.querySelector('#screen-A [data-derived-part]') || {}).textContent || '').replace(/\\s+/g, ' ').trim().slice(0, 80),
+      part: (document.getElementById('block-part') || {}).value || '',
+    }))()`);
+    await clickSel(cdp, '#screen-A [data-action="block-cancel"]');
+    await evalJson(cdp, `(() => { const TB = window.TeamBoard; TB.state.data.settings.roles = (TB.state.data.settings.roles || []).filter(r => r !== '운영총괄'); TB.render(); return true; })()`);
+    await sleep(200);
+    report.writePaths.derivedCatalogScreen = s26b;
+    if (!(String(s26b.before.options) === String(s26.roles.concat(['운영총괄'])))) fail('파생 카탈로그: 블럭 추가 창의 파트 목록이 역할 목록을 따르지 않음: ' + JSON.stringify(s26b.before));
+    else ok(`파생 카탈로그: 블럭 추가 창 파트 목록 = 역할 목록 ${s26b.before.options.length}종`);
+    if (!(s26b.derived.part === '운영총괄' && String(s26b.derived.chips) === String(s26.generic) && /공통 블럭/.test(s26b.derived.note))) fail('파생 카탈로그: 파트 "운영총괄" 선택 시 공통 블럭 5종·안내 문구가 나오지 않음: ' + JSON.stringify(s26b.derived));
+    else ok(`파생 카탈로그: 파트 "운영총괄" → 블럭 ${s26b.derived.chips.length}종 표시 · 안내 "${s26b.derived.note.slice(0, 40)}…"`);
 
     if (report.mockWrites.length < 10) fail(`[mock write] 로그가 10건 미만 (${report.mockWrites.length}건)`);
     else ok(`[mock write] 로그 ${report.mockWrites.length}건 (4턴 게이트 포함)`);

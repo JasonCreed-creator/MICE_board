@@ -219,11 +219,15 @@ function addDays_(dateStr, n) {
 }
 
 // 탭 하나의 데이터 행을 읽는다 → [{ row: 시트 행번호, values: [...] }]
-// 2행부터 마지막 행까지, 첫 열(ID·주차·이름)이 빈 행은 건너뛴다. values 길이는 HEADERS 의 열 개수와 같다.
+// 2행부터 마지막 행까지, 첫 열(ID·주차·이름)이 빈 행은 건너뛴다. values 길이는 HEADERS 의 열 개수와 같다
+// (시트가 그보다 좁으면 있는 만큼 — 없는 칸은 읽는 쪽이 빈 값으로 본다).
 function readRows_(sheetName) {
   const sheet = getSheet_(sheetName);
   const headers = HEADERS[sheetName];
-  const width = (headers && headers.length) ? headers.length : sheet.getLastColumn();
+  let width = (headers && headers.length) ? headers.length : sheet.getLastColumn();
+  // 시트가 헤더보다 좁으면(열을 지웠거나, 6턴 이메일 열을 아직 안 만든 팀원 탭) 있는 만큼만 읽는다.
+  // 모자란 칸은 …FromRowApi_ 가 빈 값으로 본다 — 범위 밖 읽기로 초기 로드가 통째로 실패하지 않게.
+  width = Math.max(1, Math.min(width, sheet.getMaxColumns()));
   const lastRow = sheet.getLastRow();
   if (lastRow < 2 || width < 1) return [];
   const values = sheet.getRange(2, 1, lastRow - 1, width).getValues();
@@ -3267,6 +3271,376 @@ function addItems(projectId, milestone, part, blockNames) {
     if (sync.history) result.historyExtra = [sync.history];
   });
   return finalizeApi_(result, 'addItems');
+}
+
+// ---------- 쓰기 8: 변경이력 되돌리기 (6턴 · 결정 D19 · 브리프 T6 §4) ----------
+// 화면 "최근 변경" 한 줄을 그 줄이 생기기 직전 상태로 되돌린다. 되돌리기도 이력에 `되돌림` 으로 남아 다시 되돌릴 수 있다.
+// payload = { index, row, expected }
+//   index    getBootstrap 이 내려준 history 배열의 인덱스(0 = 가장 최근)
+//   row      그 항목의 시트 행 번호. 다시 읽은 항목의 행과 다르면 "목록이 바뀌었습니다" 로 거부한다(그 사이 다른 사람이 저장)
+//   expected 화면이 보고 있던 이력 항목(일시·탭·키·동작). 하나라도 다르면 같은 이유로 거부(선택 · 빈 값은 건너뛴다)
+// 절차: 잠금 → 이력 행 다시 읽기 → Schema.restoreCheck → 모드별 복원 → 변경이력에 `되돌림` 1건(백업 = 복원 직전 상태)
+//   replace  그 키의 행 묶음을 백업 배열로 통째 교체 — 배정 저장(프로젝트 단위) · 주간 공수 저장(팀원·주차 단위).
+//            그 밖의 탭(마일스톤 일괄 처리 등)은 백업 배열의 행마다 키로 찾아 되돌린다
+//   row      단일 행 되돌리기(수정). 그 키의 행이 없으면 다시 만든다(삭제 되돌리기)
+//   delete   추가의 되돌리기 — 그 행을 지운다(세부항목이면 딸린 주석도 함께)
+// 수식 열(마일스톤 F · 정산 D·E·H·I · 세부항목 M)은 쓰지 않는다 — Schema.toValues 가 그 칸에 null 을 준다.
+// 되돌린 탭이 `배정`·`세부항목` 이면 그 프로젝트의 자동 배정을 다시 맞춘다(D13 · syncAssignmentsFromItemsApi_).
+// 복원 값은 그때 시트에 있던 값을 그대로 되돌린다(재검증하지 않는다 — 참조가 사라진 행도 일단 살려 두고 사람이 고치게 한다).
+// 반환: { ok, table, sheet, mode, key, restored, removed, rows, removedKeys,
+//         projectId?·assignments?·overlaps?(배정·세부항목) · member?·week?·effortLogs?(공수기록) · history, historyExtra? }
+const HISTORY_STALE_MSG_Api_ = '목록이 바뀌었습니다. 새로고침 후 다시 시도하세요.';
+
+function restoreHistory(payload, rowOpt, expectedOpt) {
+  const req = (payload && typeof payload === 'object' && !Array.isArray(payload))
+    ? payload
+    : { index: payload, row: rowOpt, expected: expectedOpt };
+  const index = numApi_(req.index);
+  const rowNum = numApi_(req.row);
+  if (index === null || index < 0 || Math.floor(index) !== index) throw new Error('되돌릴 기록을 고르세요.');
+  if (rowNum === null || rowNum < 2) throw new Error(HISTORY_STALE_MSG_Api_);
+
+  let result = null;
+  withLock_(function () {
+    result = restoreHistoryApi_(index, rowNum, req.expected);
+  });
+  return finalizeApi_(result, 'restoreHistory');
+}
+
+// 되돌리기의 잠금 안쪽 로직(잠금 중첩 금지 — 바깥에서 withLock_ 으로 감싸 부른다)
+function restoreHistoryApi_(index, rowNum, expected) {
+  const entry = readHistoryApi_(HISTORY_LIMIT_Api_)[index];
+  if (!entry || entry.row !== rowNum) throw new Error(HISTORY_STALE_MSG_Api_);
+  if (expected && typeof expected === 'object' && !Array.isArray(expected)) {
+    const differs = ['at', 'sheet', 'key', 'action'].some(function (k) {
+      const want = strApi_(expected[k]);
+      return want !== '' && want !== strApi_(entry[k]);
+    });
+    if (differs) throw new Error(HISTORY_STALE_MSG_Api_);
+  }
+
+  if (entry.sheet === SHEETS.ITEMS || entry.sheet === SHEETS.NOTES) { ensureItemsSheetApi_(); ensureNotesSheetApi_(); }
+  const data = readAllApi_();
+  const check = Schema.restoreCheck(entry, data);
+  if (!check.ok) throw new Error(check.reason);
+
+  const table = check.table;
+  const def = Schema.TABLES[table];
+  const sheet = getSheet_(def.sheet);
+  const rows = check.rows;
+  const out = {
+    ok: true, table: table, sheet: def.sheet, mode: check.mode, key: entry.key,
+    restored: 0, removed: 0, rows: [], removedKeys: []
+  };
+  const lines = [];
+  let backup = null;                       // `되돌림` 이력의 백업 = 복원 직전 상태(이 되돌리기를 다시 되돌릴 수 있게)
+  let syncPid = '';                        // 복원 뒤 자동 배정을 다시 맞출 프로젝트
+
+  // 백업 행 하나를 키로 찾아 되돌린다(없으면 새 행으로 추가). 표를 통틀어 같은 규칙을 쓴다.
+  const list = readTableApi_(table, data.settings);
+  const restoreOne = function (rowJson) {
+    const values = Schema.normalizeRow(table, rowJson, { settings: data.settings });
+    const key = Schema.keyOf(table, values);
+    const blank = def.key.some(function (k) { return strApi_(key[k]) === ''; });
+    if (blank) {
+      throw new Error('이 기록은 되돌리기로 복원할 수 없습니다(여러 탭이 함께 바뀐 기록). ' +
+        '시트의 [변경이력] 탭에서 G열 "이전 행(백업)" 을 보고 직접 되돌리세요.');
+    }
+    const hit = findHitApi_(table, list, key);
+    if (hit) {
+      const before = hit.json;
+      writeRowCellsApi_(sheet, table, hit.row, values);
+      SpreadsheetApp.flush();
+      const saved = readRowJsonApi_(sheet, table, hit.row, data.settings);
+      hit.json = saved;
+      return { before: before, after: saved, created: false };
+    }
+    const r = writeNewRowApi_(sheet, table, values);
+    const saved = readRowJsonApi_(sheet, table, r, data.settings);
+    list.push({ row: r, json: saved });
+    return { before: null, after: saved, created: true };
+  };
+
+  // `배정` 은 언제나 프로젝트 단위로, `공수기록` 의 주간 저장(키가 '주차 · 팀원' 두 칸)은 그 주 단위로 통째 교체한다.
+  // Schema.restoreCheck 는 백업 행 수만 보고 mode 를 정하므로(1행이면 'row'), 묶음으로 쓰는 탭은 여기서 한 번 더 바로잡는다 —
+  // 그러지 않으면 "되돌리기의 되돌리기" 가 행 하나만 고치고 나머지를 남겨 둔다.
+  const groupKeyParts = strApi_(entry.key).split(' · ').length;
+  const groupMode = check.mode !== 'delete' && rows.length > 0 &&
+    (table === 'assignments' || (table === 'effortLogs' && groupKeyParts === 2));
+
+  out.mode = groupMode ? 'replace' : check.mode;
+
+  if (groupMode && table === 'assignments') {
+    // 배정 저장 되돌리기 — 그 프로젝트 행 전체를 백업 배열로 바꾼다(저장으로 사라진 행이 그대로 살아난다)
+    const pid = strApi_(rows[0] && rows[0].projectId) || strApi_(entry.key);
+    if (pid === '') throw new Error('되돌릴 배정의 프로젝트를 알 수 없습니다. 시트에서 직접 고치세요.');
+    rows.forEach(function (r) {
+      if (strApi_(r && r.projectId) !== pid) {
+        throw new Error('백업에 여러 프로젝트의 배정이 섞여 있어 되돌릴 수 없습니다. 시트에서 직접 고치세요.');
+      }
+    });
+    if (!findProjectApi_(pid)) throw new Error('프로젝트 "' + pid + '" 이(가) 이미 지워져 배정을 되돌릴 수 없습니다.');
+    backup = data.assignments.filter(function (a) { return a.projectId === pid; });
+    const w = writeProjectAssignmentsApi_(pid, false, rows);
+    out.projectId = pid;
+    out.restored = w.saved.length;
+    out.rows = w.saved;
+    lines.push('배정 ' + pid + ': ' + backup.length + '행 → ' + w.saved.length + '행');
+    w.saved.forEach(function (a) { lines.push(a.member + ' ' + a.role + ' ' + a.plannedMd + ' ' + a.start + '~' + a.end); });
+    syncPid = pid;
+
+  } else if (groupMode && table === 'effortLogs') {
+    // 주간 공수 저장 되돌리기 — 그 팀원·주차 행 전체를 백업 배열로 바꾼다
+    const week = strApi_(rows[0] && rows[0].week);
+    const member = strApi_(rows[0] && rows[0].member);
+    if (week === '' || member === '') throw new Error('되돌릴 공수기록의 주차·팀원을 알 수 없습니다. 시트에서 직접 고치세요.');
+    rows.forEach(function (r) {
+      if (strApi_(r && r.week) !== week || strApi_(r && r.member) !== member) {
+        throw new Error('백업에 여러 주차·팀원의 기록이 섞여 있어 되돌릴 수 없습니다. 시트에서 직접 고치세요.');
+      }
+    });
+    const cur = readRows_(SHEETS.LOGS).filter(function (r) {
+      return dateApi_(r.values[COL_Api_.log.week]) === week && strApi_(r.values[COL_Api_.log.member]) === member;
+    });
+    backup = cur.map(function (r) { return logFromRowApi_(r.values); });
+    deleteRowsApi_(sheet, cur.map(function (r) { return r.row; }));
+    SpreadsheetApp.flush();
+    const saved = [];
+    rows.forEach(function (r) {
+      const values = Schema.normalizeRow('effortLogs', r, { settings: data.settings });
+      const at = writeNewRowApi_(sheet, 'effortLogs', values);
+      saved.push(readRowJsonApi_(sheet, 'effortLogs', at, data.settings));
+    });
+    out.member = member;
+    out.week = week;
+    out.effortLogs = saved;
+    out.rows = saved;
+    out.restored = saved.length;
+    lines.push('공수기록 ' + week + ' · ' + member + ': ' + backup.length + '행 → ' + saved.length + '행');
+
+  } else if (check.mode === 'delete') {
+    // 추가의 되돌리기 — 그 행을 지운다. 백업이 비어 있으면 이력 키(D열)로 행을 찾는다
+    if (table === 'projects') {
+      throw new Error('프로젝트 추가는 되돌리기로 지울 수 없습니다. 프로젝트 상세에서 [삭제] 를 쓰세요(배정·마일스톤·정산이 함께 정리됩니다).');
+    }
+    const key = rows.length > 0 ? Schema.keyOf(table, rows[0]) : restoreKeyFromLabelApi_(table, entry.key);
+    if (!key) {
+      throw new Error('이 기록은 되돌릴 행을 하나로 특정할 수 없습니다(여러 행을 한 번에 추가한 기록). 행을 직접 지우거나 시트에서 고치세요.');
+    }
+    const hit = findHitApi_(table, list, key);
+    if (!hit) throw new Error(def.label + ' "' + Schema.keyLabel(table, key) + '" 을(를) 찾을 수 없습니다. 이미 지워졌습니다.');
+    const current = hit.json;
+    let notesRemoved = [];
+    if (table === 'items') {                       // 세부항목을 지우면 그 세부ID 의 주석도 함께(삭제 규칙과 같게)
+      const nts = readRowsOptApi_(SHEETS.NOTES).filter(function (r) {
+        return strApi_(r.values[COL_Api_.note.itemId]) === strApi_(current.id);
+      });
+      notesRemoved = nts.map(function (r) { return noteFromRowApi_(r.values); });
+      const notesSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEETS.NOTES);
+      if (notesSheet) deleteRowsApi_(notesSheet, nts.map(function (r) { return r.row; }));
+    }
+    deleteRowsApi_(sheet, [hit.row]);
+    SpreadsheetApp.flush();
+    backup = notesRemoved.length > 0 ? { item: current, notes: notesRemoved } : current;
+    out.removed = 1;
+    out.removedKeys = [Schema.keyOf(table, current)];
+    lines.push('추가 취소: ' + def.label + ' ' + Schema.keyLabel(table, current) + ' 행 삭제' +
+      (notesRemoved.length > 0 ? ' · 딸린 주석 ' + notesRemoved.length + '건 함께 삭제' : ''));
+    if (table === 'items') syncPid = strApi_(current.projectId);
+
+  } else {
+    // row(단일 행) · replace(마일스톤 일괄 처리 등) — 백업 행마다 키로 찾아 되돌린다
+    const before = [];
+    rows.forEach(function (r) {
+      const res = restoreOne(r);
+      before.push(res.before);
+      out.rows.push(res.after);
+      out.restored++;
+      if (res.created) {
+        lines.push(def.label + ' ' + Schema.keyLabel(table, res.after) + ': 지워진 행을 다시 만듦');
+      } else {
+        const changes = Schema.diff(table, res.before, res.after);
+        lines.push(def.label + ' ' + Schema.keyLabel(table, res.after) + ': ' +
+          (changes.length === 0
+            ? '바뀐 값 없음'
+            : changes.map(function (d) { return d.label + ' ' + (d.before || '(빈 값)') + ' → ' + (d.after || '(빈 값)'); }).join(' · ')));
+      }
+      if (table === 'items' && syncPid === '') syncPid = strApi_(res.after.projectId);
+    });
+    const kept = before.filter(function (b) { return b !== null; });
+    // 되돌리기로 새로 만든 행은 백업에 남길 이전 내용이 없다 → 그만큼 "다시 되돌리기" 가 안 된다(행을 지우면 된다)
+    backup = kept.length === 0 ? null : (rows.length === 1 && kept.length === 1 ? kept[0] : kept);
+  }
+
+  const histSummary = ['되돌린 기록: ' + entry.at + ' · ' + entry.sheet + ' · ' + entry.action + ' · ' + (entry.key || '(키 없음)')]
+    .concat(lines).join('\n');
+  out.history = logHistory_(def.sheet, entry.key, '되돌림', histSummary, backup);
+
+  if (syncPid !== '') {                            // D13 — 배정·세부항목을 되돌렸으면 자동 배정 행을 다시 맞춘다
+    const s = syncAssignmentsFromItemsApi_(syncPid);
+    out.projectId = syncPid;
+    out.assignments = s.assignments;
+    out.overlaps = s.overlaps;
+    if (s.history) out.historyExtra = [s.history];
+  }
+  return out;
+}
+
+// 이력 D열(키) 문자열 → 표 키 객체. 백업이 비어 있는 `추가` 기록에서 지울 행을 찾는 마지막 수단이다.
+// Schema.keyLabel(§9.6) 의 역함수 — 한 행으로 좁혀지지 않으면(여러 행을 한 번에 추가한 기록 등) null.
+function restoreKeyFromLabelApi_(table, label) {
+  const def = Schema.TABLES[table];
+  const s = strApi_(label);
+  if (s === '') return null;
+  const key = {};
+  if (table === 'items') {                          // '프로젝트ID · 마일스톤 · 블럭 (W-000001)'
+    const m = /\(([^()]+)\)\s*$/.exec(s);
+    if (!m) return null;
+    key.id = strApi_(m[1]);
+  } else if (table === 'notes') {                   // 'N-000001 · W-000001'
+    key.id = strApi_(s.split(' · ')[0]);
+  } else if (def.key.length === 1) {                // 프로젝트ID · 이름 · 정산 프로젝트ID
+    key[def.key[0]] = s;
+  } else if (table === 'milestones') {              // '프로젝트ID · 마일스톤'(이름 안에 ' · ' 가 있을 수 있어 첫 칸만 자른다)
+    const parts = s.split(' · ');
+    if (parts.length < 2) return null;
+    key.projectId = strApi_(parts[0]);
+    key.name = strApi_(parts.slice(1).join(' · '));
+  } else {                                          // 공수기록 '주차 · 팀원 · 프로젝트ID'
+    const parts = s.split(' · ');
+    if (parts.length < def.key.length) return null;
+    def.key.forEach(function (k, i) { key[k] = strApi_(parts[i]); });
+  }
+  const blank = def.key.some(function (k) { return strApi_(key[k]) === ''; });
+  return blank ? null : key;
+}
+
+// ---------- 쓰기 9: 마일스톤 일괄 처리 (6턴 · 결정 D21 · 브리프 T6 §4) ----------
+// 지연 목록에서 여러 건을 골라 한 번에 완료 처리하거나 예정일을 미룬다.
+// payload = { action, keys, payload, expected }
+//   action   'complete' 완료 처리 | 'shift' 예정일 조정
+//   keys     [{ projectId, name }] — 화면에서 고른 마일스톤(중복은 한 번만 처리)
+//   payload  complete → { done: 'YYYY-MM-DD' }(비우면 오늘) · shift → { days: 정수 } 또는 { due: 'YYYY-MM-DD' }
+//   expected 화면이 보고 있던 마일스톤 행 배열(선택). 키로 짝지어 한 필드라도 다르면 충돌로 거부(D9)
+// 절차: 잠금 → 대상 행 수집(없는 키는 오류) → Schema.validateBulkMilestone → 바뀐 필드만 부분 쓰기
+//       (상태 F열은 수식이라 쓰지 않는다) → 변경이력 묶음 1건(탭 마일스톤 · 키 `일괄 N건` · 동작 저장 · 백업 = 이전 행 배열)
+//       → 관련 프로젝트 자동 배정 재동기화(예정일이 바뀌면 자동 행 기간도 바뀐다 — D13)
+// 반환: { ok, action, count, changed, unchanged?, milestones:[저장된 행], warnings:[],
+//         syncs:[{ projectId, assignments, overlaps, changed }], history, historyExtra }
+function bulkMilestone(payload, keysOpt, payloadOpt, expectedOpt) {
+  const req = (payload && typeof payload === 'object' && !Array.isArray(payload))
+    ? payload
+    : { action: payload, keys: keysOpt, payload: payloadOpt, expected: expectedOpt };
+  const action = strApi_(req.action);
+  if (action !== 'complete' && action !== 'shift') throw new Error('동작: 완료 처리 또는 예정일 조정만 할 수 있습니다.');
+  if (!Array.isArray(req.keys) || req.keys.length === 0) throw new Error('대상: 처리할 마일스톤을 하나 이상 고르세요.');
+
+  let result = null;
+  withLock_(function () {
+    result = bulkMilestoneApi_(action, req.keys, req.payload, req.expected);
+  });
+  return finalizeApi_(result, 'bulkMilestone');
+}
+
+// 일괄 처리의 잠금 안쪽 로직(잠금 중첩 금지 — 바깥에서 withLock_ 으로 감싸 부른다)
+function bulkMilestoneApi_(action, keys, payload, expected) {
+  const data = readAllApi_();
+  const sheet = getSheet_(SHEETS.MILESTONES);
+  const def = Schema.TABLES.milestones;
+  const list = readTableApi_('milestones', data.settings);
+
+  // 1) 대상 행 수집 — 없는 키가 하나라도 있으면 시트를 건드리기 전에 멈춘다
+  const hits = [];
+  const seen = {};
+  keys.forEach(function (k) {
+    const key = { projectId: strApi_(k && k.projectId), name: strApi_(k && k.name) };
+    const label = key.projectId + ' · ' + key.name;
+    if (key.projectId === '' || key.name === '') throw new Error('대상: 프로젝트와 마일스톤 이름이 모두 있어야 합니다.');
+    if (seen[label]) return;
+    seen[label] = true;
+    const hit = findHitApi_('milestones', list, key);
+    if (!hit) throw new Error('마일스톤 "' + label + '" 을(를) 찾을 수 없습니다. 화면을 새로고침한 뒤 다시 시도하세요.');
+    hits.push(hit);
+  });
+
+  // 2) 충돌 검사(D9) — 화면이 보고 있던 행과 지금 시트 행이 다르면 거부
+  if (Array.isArray(expected) && expected.length > 0) {
+    const want = {};
+    expected.forEach(function (e) { want[strApi_(e && e.projectId) + ' · ' + strApi_(e && e.name)] = e; });
+    hits.forEach(function (h) {
+      const e = want[strApi_(h.json.projectId) + ' · ' + strApi_(h.json.name)];
+      if (e && hasConflictApi_('milestones', h.json, e)) {
+        throw new Error('다른 사용자가 먼저 수정했습니다. 화면을 새로고침한 뒤 다시 시도하세요.');
+      }
+    });
+  }
+
+  // 3) 검증 — 완료일·조정 값 판정은 Schema 가 한다(화면 미리보기와 결과가 같아야 한다). 완료일을 비우면 오늘
+  const p = (payload && typeof payload === 'object' && !Array.isArray(payload)) ? payload : {};
+  const done = (action === 'complete') ? (strApi_(p.done) || todayStr_()) : '';
+  const due = strApi_(p.due);
+  const days = (p.days === null || p.days === undefined || p.days === '') ? null : numApi_(p.days);
+  const values = { done: done, due: due, days: days };
+  const ctx = { settings: data.settings, data: data, mode: 'edit', expected: null, today: todayStr_() };
+  const checked = Schema.validateBulkMilestone(action, hits.map(function (h) { return h.json; }), values, ctx);
+  if (!checked.ok) { const e = checked.errors[0]; throw new Error(e.label + ': ' + e.message); }
+
+  // 4) 행 단위 부분 쓰기 — 바뀐 필드만. 상태(F)는 수식 열이라 절대 쓰지 않는다
+  const before = hits.map(function (h) { return h.json; });
+  let changedRows = 0;
+  hits.forEach(function (h, i) {
+    const value = checked.values[i];
+    const changes = Schema.diff('milestones', h.json, value);
+    if (changes.length === 0) return;
+    changes.forEach(function (d) {
+      const fd = Schema.field('milestones', d.field);
+      if (!fd || fd.auto || def.formulaCols.indexOf(fd.col) >= 0) return;
+      sheet.getRange(h.row, fd.col + 1).setValue(cellValueApi_(fd, value[fd.key]));
+    });
+    changedRows++;
+  });
+  SpreadsheetApp.flush();
+  const after = hits.map(function (h) { return readRowJsonApi_(sheet, 'milestones', h.row, data.settings); });
+
+  const label = (action === 'complete') ? '완료 처리' : '예정일 조정';
+  const detail = (action === 'complete')
+    ? '완료일 ' + done
+    : (due !== '' ? '예정일 ' + due : (days > 0 ? '+' + days + '일' : days + '일'));
+  const out = {
+    ok: true, action: action, count: hits.length, changed: changedRows,
+    milestones: after, warnings: checked.warnings || [], syncs: [], history: null, historyExtra: []
+  };
+  if (changedRows === 0) {            // 바뀐 값이 없으면 시트도 이력도 건드리지 않는다
+    out.unchanged = true;
+    return out;
+  }
+
+  // 5) 변경이력 묶음 1건 — 백업은 이전 행 배열(그대로 되돌리기가 가능하다)
+  const lines = after.map(function (m, i) {
+    const changes = Schema.diff('milestones', before[i], m);
+    return before[i].projectId + ' · ' + before[i].name + ': ' +
+      (changes.length === 0
+        ? '바뀐 값 없음'
+        : changes.map(function (d) { return d.label + ' ' + (d.before || '(빈 값)') + ' → ' + (d.after || '(빈 값)'); }).join(' · '));
+  });
+  const summary = ['마일스톤 일괄 ' + label + ' ' + hits.length + '건(' + detail + ')']
+    .concat(lines)
+    .concat(checked.warnings && checked.warnings.length ? ['확인 필요: ' + checked.warnings.join(' / ')] : [])
+    .join('\n');
+  out.history = logHistory_(SHEETS.MILESTONES, '일괄 ' + hits.length + '건', '저장', summary, before);
+
+  // 6) 자동 배정 재동기화 — 예정일이 바뀌면 자동 행 기간이 바뀌고, 완료 처리도 같은 기준으로 한 번 맞춘다
+  const pids = [];
+  after.forEach(function (m) {
+    const pid = strApi_(m.projectId);
+    if (pid !== '' && pids.indexOf(pid) < 0 && data.projects.some(function (x) { return x.id === pid; })) pids.push(pid);
+  });
+  pids.forEach(function (pid) {
+    const s = syncAssignmentsFromItemsApi_(pid);
+    out.syncs.push({ projectId: pid, assignments: s.assignments, overlaps: s.overlaps, changed: s.changed });
+    if (s.history) out.historyExtra.push(s.history);
+  });
+  return out;
 }
 
 // ---------- 세부 항목 → 배정 자동 행 동기화 (5턴 · 결정 D13 · 브리프 T5 §3) ----------

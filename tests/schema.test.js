@@ -1,9 +1,11 @@
 /*!
- * tests/schema.test.js — 편집 계약 검산 (docs/DATA-CONTRACT.md §9 · SPEC v1.3 §5.2)
+ * tests/schema.test.js — 편집 계약 검산 (docs/DATA-CONTRACT.md §9 · SPEC v1.4 §5.2)
  *
  * 원칙
  *  - 픽스처는 이 파일 안에서 최소 크기로 직접 만든다(mock/sample-data.json 에 의존하지 않는다).
  *  - 테스트 이름은 계약 §9 의 절 번호로 시작한다. §9.9~§9.14 는 5턴(세부 항목·주석·업무 블럭·롤업·배정 동기화).
+ *  - §9.17~§9.22 는 6턴: 본인 매칭(D17) · 배정 저장 가드(D20) · 되돌리기(D19) · 마일스톤 일괄 처리(D21) ·
+ *    카탈로그 파생(D22) · 내 주간 공수 행(D18). 서버·화면·mock 이 같은 판정을 쓰는지 여기서 고정한다.
  *  - schema.js 는 순수 함수만 두므로 DOM·시트·현재 시각 없이 그대로 검사한다.
  *
  * 실행: node --test tests/schema.test.js
@@ -1425,4 +1427,452 @@ test('§9.14 DEFAULT_BLOCKS — 카탈로그 44건이 blocks 표 검증을 통�
   /* 역할 목록이 6종인 시트에서는 운영총괄·운영 Sub 블럭이 파트 오류가 된다 — 카탈로그 파생(§9.21)이 필요한 이유 */
   const r3 = S.validateRow('blocks', S.DEFAULT_BLOCKS[33], ctx());
   assert.deepEqual(fieldsOf(r3), ['part'], '설정 역할에 없는 파트는 목록 오류');
+});
+
+/* ================================================================== *
+ * §9.17 본인 매칭 `matchMember` — 6턴 D17
+ * ================================================================== */
+
+/** 이메일이 있는 팀원 3명(퇴사 1명 포함) */
+function memberEmails() {
+  return [
+    { name: '팀원1', role: '운영 PM', capacityMd: 20, status: '재직', color: '', email: 'Hong@Company.com' },
+    { name: '팀원2', role: '모객', capacityMd: 20, status: '재직', color: '', email: '' },
+    { name: '팀원3', role: '영업', capacityMd: 20, status: '퇴사', color: '', email: 'gone@company.com' },
+    { name: '팀원4', role: '현장 운영', capacityMd: 20, status: '지원', color: '', email: 'help@company.com' }
+  ];
+}
+
+test('§9.17 matchMember — 대소문자·앞뒤 공백 무시 · 못 찾으면 "" · 빈 값·목록 없음도 ""', function () {
+  const M = memberEmails();
+  assert.equal(S.matchMember('hong@company.com', M), '팀원1', '소문자로 들어와도 매칭');
+  assert.equal(S.matchMember('HONG@COMPANY.COM', M), '팀원1');
+  assert.equal(S.matchMember('  hong@company.com  ', M), '팀원1', '앞뒤 공백 무시');
+  assert.equal(S.matchMember('없는사람@company.com', M), '', '못 찾으면 빈 문자열 → 화면이 이름 선택으로 넘어간다');
+  assert.equal(S.matchMember('', M), '', '로그인 이메일을 못 읽는 경우');
+  assert.equal(S.matchMember(null, M), '');
+  assert.equal(S.matchMember('hong@company.com', null), '', '팀원 목록이 없어도 오류 없이 ""');
+  assert.equal(S.matchMember('hong@company.com', []), '');
+});
+
+test('§9.17 matchMember — 퇴사 팀원은 매칭하지 않는다 · 지원·휴직은 매칭한다 · 이메일 빈 팀원은 건너뛴다', function () {
+  const M = memberEmails();
+  assert.equal(S.matchMember('gone@company.com', M), '', '퇴사자 계정으로 열어도 본인으로 잡지 않는다(D17)');
+  assert.equal(S.matchMember('help@company.com', M), '팀원4', '지원 인력은 기록을 남길 수 있다');
+  M[1].status = '휴직';
+  M[1].email = 'rest@company.com';
+  assert.equal(S.matchMember('rest@company.com', M), '팀원2');
+  assert.equal(S.matchMember('', M), '', '이메일이 빈 팀원이 있어도 빈 입력은 매칭되지 않는다');
+});
+
+test('§9.17 members 이메일 — 형식 검증 · 팀원 간 중복 거부(대소문자 무시) · 빈 값 허용 · 수정 모드 자기 자신 제외', function () {
+  const data = baseData();
+  data.members[0].email = 'hong@company.com';
+  data.members[1].email = '';
+  const c = ctx({ data: data });
+
+  const bad = S.validateRow('members', { name: '팀원3', role: '영업', email: 'hong(at)company.com' }, c);
+  assert.deepEqual(fieldsOf(bad), ['email']);
+  assert.match(messageOf(bad, 'email'), /이메일 형식이 아닙니다/);
+
+  const dup = S.validateRow('members', { name: '팀원3', role: '영업', email: 'HONG@company.com' }, c);
+  assert.deepEqual(fieldsOf(dup), ['email']);
+  assert.match(messageOf(dup, 'email'), /같은 이메일이 이미 있습니다: 팀원1/);
+
+  const okRow = S.validateRow('members', { name: '팀원3', role: '영업', email: 'kim@company.com' }, c);
+  assert.equal(okRow.ok, true, JSON.stringify(okRow.errors));
+
+  const blank = S.validateRow('members', { name: '팀원4', role: '영업', email: '' }, c);
+  assert.equal(blank.ok, true, '선택 입력 — 비우면 화면에서 이름을 고른다');
+
+  const self = S.validateRow('members', Object.assign({}, data.members[0], { role: '영업' }),
+    ctx({ data: data, mode: 'edit', expected: data.members[0] }));
+  assert.equal(self.ok, true, '자기 이메일은 중복이 아니다: ' + JSON.stringify(self.errors));
+});
+
+/* ================================================================== *
+ * §9.18 배정 저장 가드 `assignmentSaveGuard` — 6턴 D20
+ * ================================================================== */
+
+/** 배정 행 만들기(기본값은 baseData 의 P-2026-001 기준) */
+function arow(id, member, role, md) {
+  return { id: id, projectId: 'P-2026-001', member: member, role: role, plannedMd: md, start: '2026-09-01', end: '2026-09-30', status: '진행', note: '' };
+}
+
+test('§9.18 assignmentSaveGuard — 사라지는 행 수·목록 · 추가 · 변경 건수 · warn 은 사라짐이 1건 이상일 때만', function () {
+  const before = [arow('A-0001', '팀원1', '운영 PM', 5), arow('A-0002', '팀원2', '모객', 3), arow('A-0003', '팀원2', '영업', 1)];
+
+  /* 그대로 저장 */
+  const same = S.assignmentSaveGuard(before, before.map(function (r) { return Object.assign({}, r); }));
+  assert.deepEqual([same.removed, same.added, same.changed, same.warn], [0, 0, 0, false]);
+  assert.deepEqual(same.removedRows, []);
+
+  /* 2행이 사라지고 1행이 새로 생기고 1행이 바뀐다 */
+  const after = [
+    Object.assign({}, before[0], { plannedMd: 7 }),
+    Object.assign({}, arow('', '팀원1', '영업', 2))
+  ];
+  const g = S.assignmentSaveGuard(before, after);
+  assert.equal(g.removed, 2, 'A-0002 · A-0003 이 사라진다');
+  assert.deepEqual(g.removedRows.map(function (r) { return r.id; }), ['A-0002', 'A-0003'], '경고 박스에 이름·역할·M/D 를 나열할 수 있게 행 전체를 준다');
+  assert.deepEqual(g.removedRows.map(function (r) { return [r.member, r.role, r.plannedMd]; }), [['팀원2', '모객', 3], ['팀원2', '영업', 1]]);
+  assert.equal(g.added, 1, 'ID 가 빈 행 = 새 행');
+  assert.equal(g.changed, 1, '계획 M/D 5 → 7');
+  assert.equal(g.warn, true, '사라지는 행이 있으면 2단계 확인');
+});
+
+test('§9.18 assignmentSaveGuard — 값만 바꾸면 경고 없음 · 추가만 해도 경고 없음 · 빈 배열·잘못된 인자도 오류 없이 0', function () {
+  const before = [arow('A-0001', '팀원1', '운영 PM', 5)];
+
+  const edited = S.assignmentSaveGuard(before, [Object.assign({}, before[0], { note: '메모' })]);
+  assert.deepEqual([edited.removed, edited.changed, edited.warn], [0, 1, false]);
+
+  const added = S.assignmentSaveGuard(before, before.concat([arow('', '팀원2', '모객', 1)]));
+  assert.deepEqual([added.removed, added.added, added.warn], [0, 1, false]);
+
+  const cleared = S.assignmentSaveGuard(before, []);
+  assert.equal(cleared.removed, 1);
+  assert.equal(cleared.warn, true, '전부 지우고 저장하는 것이 4턴에 실제로 일어난 사고(3행 소실)');
+
+  assert.deepEqual(S.assignmentSaveGuard(null, null), { removed: 0, removedRows: [], added: 0, changed: 0, warn: false });
+  assert.equal(S.assignmentSaveGuard([{ id: '' }], []).removed, 0, 'ID 가 없던 행은 "사라진 행" 으로 세지 않는다');
+});
+
+/* ================================================================== *
+ * §9.19 되돌리기 `restoreCheck` · `restoreLabel` — 6턴 D19
+ * ================================================================== */
+
+/** 변경이력 한 줄(부트스트랩 history 항목 + 백업) */
+function entry(sheet, action, key, backup) {
+  return { at: '2026-09-14 12:49:00', user: 'a@company.com', sheet: sheet, key: key, action: action, summary: '', backup: backup };
+}
+
+test('§9.19 restoreCheck — 배정 "저장" 은 그 키의 행 묶음 교체(replace) · 백업 배열을 그대로 돌려준다', function () {
+  const rows = [arow('A-0016', '팀원1', '운영 PM', 5), arow('A-0017', '팀원2', '모객', 3), arow('A-0018', '팀원2', '영업', 1), arow('A-0019', '팀원3', '현장 운영', 2)];
+  const c = S.restoreCheck(entry('배정', '저장', 'P-2026-001', JSON.stringify(rows)), baseData());
+  assert.equal(c.ok, true, c.reason);
+  assert.equal(c.table, 'assignments');
+  assert.equal(c.mode, 'replace');
+  assert.equal(c.rows.length, 4, '4턴 사고(4행 → 1행)를 4행으로 되돌린다');
+  assert.equal(c.rows[0].id, 'A-0016');
+
+  /* 이미 객체·배열로 들어온 백업(서버가 파싱해 내려준 경우)도 같은 결과 */
+  assert.equal(S.restoreCheck(entry('배정', '저장', 'P-2026-001', rows), null).mode, 'replace');
+});
+
+test('§9.19 restoreCheck — "추가" 는 delete(그 행을 지운다) · 백업이 있어도 delete · 수정·삭제 단일 행은 row · 여러 행이면 replace', function () {
+  const one = { projectId: 'P-2026-001', name: '답사', due: '2026-09-28', done: '', owner: '팀원1' };
+
+  const addNoBackup = S.restoreCheck(entry('마일스톤', '추가', 'P-2026-001 · 답사', ''), null);
+  assert.deepEqual([addNoBackup.ok, addNoBackup.mode, addNoBackup.table], [true, 'delete', 'milestones']);
+  assert.deepEqual(addNoBackup.rows, [], '추가의 되돌리기는 지우기 — 복원할 이전 내용이 없다');
+
+  const addWithBackup = S.restoreCheck(entry('세부항목', '추가', 'W-000001', JSON.stringify(one)), null);
+  assert.equal(addWithBackup.mode, 'delete');
+
+  const edit = S.restoreCheck(entry('마일스톤', '수정', 'P-2026-001 · 답사', JSON.stringify(one)), null);
+  assert.deepEqual([edit.ok, edit.mode], [true, 'row']);
+  assert.deepEqual(edit.rows, [one]);
+
+  const del = S.restoreCheck(entry('팀원', '삭제', '팀원9', JSON.stringify({ name: '팀원9', role: '영업', capacityMd: 20, status: '재직', color: '', email: '' })), null);
+  assert.deepEqual([del.ok, del.mode, del.table], [true, 'row', 'members']);
+
+  const many = S.restoreCheck(entry('공수기록', '삭제', '2026-09-07 · 팀원1', JSON.stringify([one, one])), null);
+  assert.equal(many.mode, 'replace', '여러 행이 한 줄에 묶여 있으면 묶음 교체');
+
+  const again = S.restoreCheck(entry('마일스톤', '되돌림', 'P-2026-001 · 답사', JSON.stringify(one)), null);
+  assert.deepEqual([again.ok, again.mode], [true, 'row'], '되돌리기의 되돌리기도 가능(D19)');
+});
+
+test('§9.19 restoreCheck — 프로젝트 삭제(연쇄)·변경이력 자체·모르는 탭·깨진 백업·빈 백업은 거부하고 사유를 준다', function () {
+  const chain = S.restoreCheck(entry('프로젝트', '삭제', 'P-2026-001', JSON.stringify({ project: {}, assignments: [], milestones: [], settlements: [] })), null);
+  assert.equal(chain.ok, false);
+  assert.match(chain.reason, /프로젝트 삭제는 배정·마일스톤·정산이 함께 지워져/);
+  assert.match(chain.reason, /새 프로젝트로 다시 등록/);
+  assert.equal(chain.mode, '');
+
+  const hist = S.restoreCheck(entry('변경이력', '수정', '-', ''), null);
+  assert.equal(hist.ok, false);
+  assert.match(hist.reason, /변경이력 자체는 되돌릴 수 없습니다/);
+
+  const unknown = S.restoreCheck(entry('설정', '수정', '-', ''), null);
+  assert.equal(unknown.ok, false);
+  assert.match(unknown.reason, /되돌리기를 지원하지 않습니다/);
+  assert.match(unknown.reason, /시트에서 직접/);
+
+  const broken = S.restoreCheck(entry('마일스톤', '수정', 'P-2026-001 · 답사', '{이건 JSON 이 아니다'), null);
+  assert.equal(broken.ok, false);
+  assert.match(broken.reason, /백업 내용을 읽을 수 없어/);
+
+  const empty = S.restoreCheck(entry('마일스톤', '수정', 'P-2026-001 · 답사', ''), null);
+  assert.equal(empty.ok, false);
+  assert.match(empty.reason, /되돌릴 이전 내용이 없습니다/);
+
+  assert.equal(S.restoreCheck(null, null).ok, false, '항목이 없어도 오류를 던지지 않는다');
+});
+
+test('§9.19 restoreLabel — 모드별 안내 문구(버튼 옆) · 못 되돌리면 사유 그대로', function () {
+  const rows = [arow('A-0016', '팀원1', '운영 PM', 5), arow('A-0017', '팀원2', '모객', 3)];
+  assert.equal(
+    S.restoreLabel(entry('배정', '저장', 'P-2026-001', JSON.stringify(rows))),
+    '배정 P-2026-001 을(를) 저장 전 2행으로 되돌립니다.'
+  );
+  assert.equal(S.restoreLabel(entry('세부항목', '추가', 'W-000001', '')), '이 추가를 취소하고 행을 지웁니다.');
+  assert.equal(
+    S.restoreLabel(entry('마일스톤', '수정', 'P-2026-001 · 답사', JSON.stringify({ name: '답사' }))),
+    '마일스톤 P-2026-001 · 답사 을(를) 이전 내용으로 되돌립니다.'
+  );
+  assert.match(S.restoreLabel(entry('프로젝트', '삭제', 'P-2026-001', '{}')), /되돌릴 수 없습니다/, '거부 사유가 그대로 버튼 자리 안내가 된다');
+});
+
+/* ================================================================== *
+ * §9.20 마일스톤 일괄 처리 `validateBulkMilestone` — 6턴 D21
+ * ================================================================== */
+
+/** 지연 마일스톤 3건(baseData 기준 · 예정일 과거) */
+function lateMilestones() {
+  return [
+    { projectId: 'P-2026-001', name: '답사', due: '2026-08-28', done: '', owner: '팀원1' },
+    { projectId: 'P-2026-001', name: '행사 당일', due: '2026-09-01', done: '', owner: '' },
+    { projectId: 'P-2026-002', name: '답사', due: '2026-09-05', done: '', owner: '' }
+  ];
+}
+
+test('§9.20 validateBulkMilestone complete — 완료일 필수·형식 · 통과하면 대상 전부에 같은 완료일', function () {
+  const c = ctx();
+  const rows = lateMilestones();
+
+  const ok = S.validateBulkMilestone('complete', rows, { done: '2026-09-15' }, c);
+  assert.equal(ok.ok, true, JSON.stringify(ok.errors));
+  assert.deepEqual(ok.errors, []);
+  assert.deepEqual(ok.warnings, []);
+  assert.equal(ok.values.length, 3);
+  assert.deepEqual(ok.values.map(function (r) { return r.done; }), ['2026-09-15', '2026-09-15', '2026-09-15']);
+  assert.deepEqual(ok.values.map(function (r) { return r.due; }), ['2026-08-28', '2026-09-01', '2026-09-05'], '예정일은 그대로');
+  assert.deepEqual(Object.keys(ok.values[0]), ['projectId', 'name', 'due', 'done', 'owner'], '계약 §3.5 필드만(F 상태 수식은 건드리지 않는다)');
+
+  const noDate = S.validateBulkMilestone('complete', rows, {}, c);
+  assert.equal(noDate.ok, false);
+  assert.deepEqual(noDate.errors.map(function (e) { return e.field; }), ['done']);
+  assert.match(noDate.errors[0].message, /완료일을 고르세요/);
+
+  const badDate = S.validateBulkMilestone('complete', rows, { done: '2026-13-40' }, c);
+  assert.equal(badDate.ok, false);
+  assert.match(badDate.errors[0].message, /YYYY-MM-DD/);
+});
+
+test('§9.20 validateBulkMilestone complete — 완료일이 예정일보다 1년 이상 빠르면 경고(막지는 않는다)', function () {
+  const c = ctx();
+  const rows = [{ projectId: 'P-2026-001', name: '정산 승인', due: '2027-12-01', done: '', owner: '' }];
+  const r = S.validateBulkMilestone('complete', rows, { done: '2026-09-15' }, c);
+  assert.equal(r.ok, true, '경고는 오류가 아니다 — 2단계 확인에서 보여준다');
+  assert.equal(r.warnings.length, 1);
+  assert.match(r.warnings[0], /정산 승인/);
+  assert.match(r.warnings[0], /완료일이 예정일보다 1년 이상 빠릅니다/);
+
+  const near = S.validateBulkMilestone('complete', [{ projectId: 'P-2026-001', name: '답사', due: '2026-11-01', done: '', owner: '' }], { done: '2026-09-15' }, c);
+  assert.deepEqual(near.warnings, [], '1년 안쪽(앞당겨 끝낸 것)은 경고하지 않는다');
+});
+
+test('§9.20 validateBulkMilestone shift — days 정수 또는 due 날짜 · 0일 거부 · 소수 거부 · 지정일이 있으면 그 날짜로', function () {
+  const c = ctx();
+  const rows = lateMilestones();
+
+  const plus = S.validateBulkMilestone('shift', rows, { days: 7 }, c);
+  assert.equal(plus.ok, true, JSON.stringify(plus.errors));
+  assert.deepEqual(plus.values.map(function (r) { return r.due; }), ['2026-09-04', '2026-09-08', '2026-09-12'], '+7일');
+
+  const minus = S.validateBulkMilestone('shift', rows, { days: '-3' }, c);
+  assert.equal(minus.ok, true, '문자열 숫자도 받는다(폼 값)');
+  assert.deepEqual(minus.values.map(function (r) { return r.due; }), ['2026-08-25', '2026-08-29', '2026-09-02']);
+
+  const fixed = S.validateBulkMilestone('shift', rows, { due: '2026-10-05' }, c);
+  assert.equal(fixed.ok, true);
+  assert.deepEqual(fixed.values.map(function (r) { return r.due; }), ['2026-10-05', '2026-10-05', '2026-10-05'], '지정일은 전부 같은 날로');
+  assert.deepEqual(fixed.values.map(function (r) { return r.done; }), ['', '', ''], '완료일은 건드리지 않는다');
+
+  const zero = S.validateBulkMilestone('shift', rows, { days: 0 }, c);
+  assert.equal(zero.ok, false);
+  assert.match(zero.errors[0].message, /0일은 바뀌는 것이 없습니다/);
+
+  const half = S.validateBulkMilestone('shift', rows, { days: 1.5 }, c);
+  assert.equal(half.ok, false);
+  assert.match(half.errors[0].message, /정수/);
+
+  const none = S.validateBulkMilestone('shift', rows, {}, c);
+  assert.equal(none.ok, false);
+  assert.deepEqual(none.errors.map(function (e) { return e.field; }), ['days']);
+
+  const badDue = S.validateBulkMilestone('shift', rows, { due: '2026-02-30' }, c);
+  assert.equal(badDue.ok, false);
+  assert.match(badDue.errors[0].message, /YYYY-MM-DD/);
+});
+
+test('§9.20 validateBulkMilestone — 대상 0건·모르는 동작은 거부 · 예정일이 비어 있으면 +N일은 건너뛴다', function () {
+  const c = ctx();
+  const empty = S.validateBulkMilestone('complete', [], { done: '2026-09-15' }, c);
+  assert.equal(empty.ok, false);
+  assert.deepEqual(empty.errors.map(function (e) { return e.field; }), ['rows']);
+  assert.match(empty.errors[0].message, /하나 이상 고르세요/);
+
+  const nope = S.validateBulkMilestone('archive', lateMilestones(), {}, c);
+  assert.equal(nope.ok, false);
+  assert.deepEqual(nope.errors.map(function (e) { return e.field; }), ['action']);
+
+  const noDue = S.validateBulkMilestone('shift', [{ projectId: 'P-2026-001', name: '답사', due: '', done: '', owner: '' }], { days: 7 }, c);
+  assert.equal(noDue.ok, true);
+  assert.equal(noDue.values[0].due, '', '예정일이 없는 행은 그대로 둔다(+N일의 기준이 없다)');
+
+  assert.equal(S.validateBulkMilestone('complete', null, { done: '2026-09-15' }, null).ok, false, 'rows·ctx 가 없어도 오류를 던지지 않는다');
+});
+
+/* ================================================================== *
+ * §9.21 업무 블럭 카탈로그 파생 `blocksWithFallback` — 6턴 D22
+ * ================================================================== */
+
+test('§9.21 blocksWithFallback — 블럭 0개인 파트에 공통 블럭 5종을 파트명만 바꿔 파생 · 원본 순서 유지 · derivedParts', function () {
+  const settings = Object.assign(baseSettings(), { roles: ROLES8 });
+  const sheetBlocks = [
+    { part: '영업', block: '견적·제안서 작성', milestone: '계약 체결', md: 3, impact: '상', difficulty: '중', judge: '범위 확인', skipForHost: true },
+    { part: '모객', block: '타깃 명단 확보', milestone: '발주처 기초자료 수령', md: 2, impact: '상', difficulty: '중', judge: '타깃 조건', skipForHost: false }
+  ];
+  const r = S.blocksWithFallback(sheetBlocks, settings);
+
+  assert.deepEqual(r.derivedParts, ['운영 PM', '현장 운영', '디자인·제작', '정산·리포트', '운영총괄', '운영 Sub'], '설정 역할 순서대로 파생');
+  assert.equal(r.usedDefault, false, '시트 카탈로그가 있으면 그것이 기준(기본값 폴백 아님)');
+  assert.equal(r.list.length, 2 + 6 * 5);
+  assert.deepEqual(r.list.slice(0, 2), sheetBlocks, '원본은 순서·내용 그대로 앞에');
+
+  const derived = r.list.slice(2);
+  assert.deepEqual(derived.slice(0, 5).map(function (b) { return b.part; }), ['운영 PM', '운영 PM', '운영 PM', '운영 PM', '운영 PM']);
+  assert.deepEqual(
+    derived.slice(0, 5).map(function (b) { return b.block; }),
+    S.GENERIC_BLOCKS.map(function (b) { return b.block; }),
+    '공통 블럭 5종 — 업무 범위 정리 / 담당자 배정·일정 합의 / 진행 상황 점검 / 행사 당일 대응 / 결과 정리·인수인계'
+  );
+  derived.forEach(function (b, i) {
+    const g = S.GENERIC_BLOCKS[i % 5];
+    assert.deepEqual(
+      [b.block, b.milestone, b.md, b.impact, b.difficulty, b.judge, b.skipForHost],
+      [g.block, g.milestone, g.md, g.impact, g.difficulty, g.judge, g.skipForHost],
+      '파트만 바꾸고 나머지는 공통 블럭 그대로'
+    );
+    assert.equal(Object.keys(b).length, S.TABLES.blocks.fields.length, '카탈로그 행 필드 수');
+  });
+});
+
+test('§9.21 blocksWithFallback — 카탈로그가 비어 있으면 기본값 44건이 기준(usedDefault) · 역할 8종이면 파생 없음 · 역할이 더 늘면 그만큼 파생', function () {
+  const settings8 = Object.assign(baseSettings(), { roles: ROLES8 });
+  const fromDefault = S.blocksWithFallback([], settings8);
+  assert.equal(fromDefault.usedDefault, true);
+  assert.deepEqual(fromDefault.list, S.DEFAULT_BLOCKS, '기본 카탈로그를 그대로');
+  assert.deepEqual(fromDefault.derivedParts, [], '기본 카탈로그가 역할 8종을 전부 덮는다(D22)');
+
+  const settings9 = Object.assign(baseSettings(), { roles: ROLES8.concat(['홍보']) });
+  const grown = S.blocksWithFallback(null, settings9);
+  assert.deepEqual(grown.derivedParts, ['홍보'], '새 역할을 추가해도 고를 블럭이 0개인 파트는 생기지 않는다');
+  assert.equal(grown.list.length, S.DEFAULT_BLOCKS.length + 5);
+
+  const settings6 = baseSettings();
+  const six = S.blocksWithFallback([], settings6);
+  assert.deepEqual(six.derivedParts, [], '역할 목록이 6종이면 파생할 것이 없다(기본 카탈로그가 더 넓다)');
+  assert.equal(six.list.length, 44, '역할에 없는 파트의 기본 블럭도 목록에서 빼지는 않는다(시트 카탈로그의 단일 원천 유지)');
+
+  const noSettings = S.blocksWithFallback([], null);
+  assert.deepEqual(noSettings.derivedParts, []);
+  assert.equal(noSettings.list.length, 44, '설정이 없어도 오류 없이 기본 카탈로그');
+});
+
+test('§9.21 blocksWithFallback — 파트·블럭이 빈 행은 카탈로그로 치지 않는다(그 파트는 파생 대상)', function () {
+  const settings = baseSettings();
+  const messy = [
+    { part: '영업', block: '견적·제안서 작성', milestone: '계약 체결', md: 3, impact: '상', difficulty: '중', judge: '', skipForHost: true },
+    { part: '모객', block: '', milestone: '', md: 0, impact: '중', difficulty: '중', judge: '', skipForHost: false },
+    { part: '', block: '이름만 있는 블럭', milestone: '', md: 0, impact: '중', difficulty: '중', judge: '', skipForHost: false }
+  ];
+  const r = S.blocksWithFallback(messy, settings);
+  assert.equal(r.list.length, 1 + 5 * 5, '영업 1건만 유효 · 나머지 5파트 파생');
+  assert.ok(r.derivedParts.indexOf('모객') !== -1, '블럭 이름이 빈 행뿐인 파트도 파생 대상');
+  assert.ok(r.derivedParts.indexOf('영업') === -1);
+});
+
+/* ================================================================== *
+ * §9.22 내 주간 공수 행 `weekEffortRows` — 6턴 D18
+ * ================================================================== */
+
+/** 주간 공수 픽스처 — 2026-09-07 주(월~일 = 09-07~09-13) 기준 */
+function weekData() {
+  const d = baseData();
+  d.assignments = [
+    { id: 'A-0001', projectId: 'P-2026-001', member: '팀원1', role: '운영 PM', plannedMd: 5, start: '2026-09-01', end: '2026-09-30', status: '진행', note: '' },
+    { id: 'A-0002', projectId: 'P-2026-002', member: '팀원1', role: '영업', plannedMd: 2, start: '2026-11-01', end: '2026-11-30', status: '예정', note: '' },
+    { id: 'A-0003', projectId: 'P-2026-002', member: '팀원2', role: '모객', plannedMd: 2, start: '2026-09-01', end: '2026-09-30', status: '진행', note: '' }
+  ];
+  d.effortLogs = [];
+  d.settings = baseSettings();
+  return d;
+}
+
+test('§9.22 weekEffortRows — 그 주와 겹치는 내 배정만 · 공통코드 3종 · 프로젝트 이름을 라벨로 · 중복 없음', function () {
+  const d = weekData();
+  const rows = S.weekEffortRows('팀원1', '2026-09-07', d);
+
+  assert.deepEqual(rows.map(function (r) { return r.projectId; }), ['P-2026-001', 'G-내부', 'G-영업', 'G-휴가'], '11월 배정(P-2026-002)은 빠진다');
+  assert.deepEqual(rows.map(function (r) { return r.source; }), ['배정', '공통', '공통', '공통']);
+  assert.equal(rows[0].label, '가상 행사 A', '라벨은 행사명(없으면 코드)');
+  assert.equal(rows[1].label, 'G-내부');
+  rows.forEach(function (r) {
+    assert.equal(r.md, null, '기록이 없으면 빈 값 — 화면이 0 을 미리 채우지 않는다');
+    assert.equal(r.memo, '');
+    assert.equal(r.logged, false);
+  });
+
+  /* 다른 팀원 · 다른 주차 */
+  assert.deepEqual(S.weekEffortRows('팀원2', '2026-09-07', d).map(function (r) { return r.projectId; }), ['P-2026-002', 'G-내부', 'G-영업', 'G-휴가']);
+  assert.deepEqual(S.weekEffortRows('팀원1', '2026-11-02', d).map(function (r) { return r.projectId; }), ['P-2026-002', 'G-내부', 'G-영업', 'G-휴가'], '11월 주차에는 11월 배정이 나온다');
+  assert.deepEqual(S.weekEffortRows('없는사람', '2026-09-07', d).map(function (r) { return r.projectId; }), ['G-내부', 'G-영업', 'G-휴가'], '배정이 없어도 공통코드는 준다');
+});
+
+test('§9.22 weekEffortRows — 주 경계: 배정이 그 주 안에서 시작·종료해도 포함 · 하루라도 겹치면 포함 · 스치지 않으면 제외', function () {
+  const d = weekData();
+  d.assignments = [
+    { id: 'A-1', projectId: 'P-2026-001', member: '팀원1', role: '운영 PM', plannedMd: 1, start: '2026-09-13', end: '2026-09-20', status: '진행', note: '' },  // 일요일 시작 = 겹침
+    { id: 'A-2', projectId: 'P-2026-002', member: '팀원1', role: '영업', plannedMd: 1, start: '2026-08-01', end: '2026-09-07', status: '진행', note: '' }      // 월요일 종료 = 겹침
+  ];
+  assert.deepEqual(S.weekEffortRows('팀원1', '2026-09-07', d).filter(function (r) { return r.source === '배정'; }).map(function (r) { return r.projectId; }),
+    ['P-2026-001', 'P-2026-002']);
+
+  d.assignments = [
+    { id: 'A-3', projectId: 'P-2026-001', member: '팀원1', role: '운영 PM', plannedMd: 1, start: '2026-09-14', end: '2026-09-20', status: '예정', note: '' },  // 다음 주 월요일 시작
+    { id: 'A-4', projectId: 'P-2026-002', member: '팀원1', role: '영업', plannedMd: 1, start: '2026-08-01', end: '2026-09-06', status: '종료', note: '' }      // 지난 주 일요일 종료
+  ];
+  assert.deepEqual(S.weekEffortRows('팀원1', '2026-09-07', d).map(function (r) { return r.source; }), ['공통', '공통', '공통'], '스치지 않는 배정은 제외');
+
+  d.assignments = [{ id: 'A-5', projectId: 'P-2026-001', member: '팀원1', role: '운영 PM', plannedMd: 1, start: '', end: '', status: '예정', note: '' }];
+  assert.equal(S.weekEffortRows('팀원1', '2026-09-07', d)[0].projectId, 'P-2026-001', '기간이 비어 있는 배정은 어느 주에나 보여준다');
+});
+
+test('§9.22 weekEffortRows — 이미 기록된 행은 값을 채워 주고(logged) · 배정에 없는 코드도 기록이 있으면 행으로 · 같은 코드가 두 번 나오지 않는다', function () {
+  const d = weekData();
+  d.effortLogs = [
+    { week: '2026-09-07', member: '팀원1', projectId: 'P-2026-001', md: 2.5, memo: '현장 답사', loggedAt: '2026-09-14 09:00' },
+    { week: '2026-09-07', member: '팀원1', projectId: 'G-내부', md: 0.5, memo: '', loggedAt: '2026-09-14 09:00' },
+    { week: '2026-09-07', member: '팀원1', projectId: 'P-2026-002', md: 1, memo: '견적', loggedAt: '2026-09-14 09:00' },   // 그 주 배정은 없지만 기록은 있다
+    { week: '2026-08-31', member: '팀원1', projectId: 'P-2026-001', md: 5, memo: '지난주', loggedAt: '2026-09-07 09:00' }, // 다른 주차
+    { week: '2026-09-07', member: '팀원2', projectId: 'P-2026-002', md: 3, memo: '', loggedAt: '2026-09-14 09:00' }        // 다른 팀원
+  ];
+  const rows = S.weekEffortRows('팀원1', '2026-09-07', d);
+
+  assert.deepEqual(rows.map(function (r) { return r.projectId; }), ['P-2026-001', 'G-내부', 'G-영업', 'G-휴가', 'P-2026-002'], '기록만 있는 코드는 뒤에 · 중복 없음');
+  assert.deepEqual(rows.map(function (r) { return r.md; }), [2.5, 0.5, null, null, 1]);
+  assert.deepEqual(rows.map(function (r) { return r.logged; }), [true, true, false, false, true]);
+  assert.equal(rows[0].memo, '현장 답사');
+  assert.equal(rows[0].source, '배정', '기록이 있어도 출처는 배정 — 화면이 "내 프로젝트" 로 묶어 보여준다');
+  assert.equal(rows[4].source, '기록');
+  assert.equal(rows[4].label, '가상 행사 B');
+
+  /* 저장 묶음 검증(§9.4)에 그대로 넘길 수 있는 모양인지 */
+  const v = S.validateEffortWeek('팀원1', '2026-09-07', rows.filter(function (r) { return r.md !== null; }).map(function (r) { return { projectId: r.projectId, md: r.md, memo: r.memo }; }), ctx({ data: d }));
+  assert.equal(v.ok, true, JSON.stringify(v.errors));
+  assert.equal(v.total, 4, '2.5 + 0.5 + 1');
 });

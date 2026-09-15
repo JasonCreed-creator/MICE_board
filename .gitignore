@@ -10,3 +10,9 @@ node_modules/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# clasp — 자격증명·프로젝트 ID (저장소가 공개이므로 절대 커밋하지 않는다)
+.clasprc.json
+*.clasprc.json
+.clasp.json
+!.clasp.json.example

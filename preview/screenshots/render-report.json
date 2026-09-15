@@ -1,6 +1,6 @@
 {
-  "browser": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
-  "startedAt": "2026-09-14T07:28:43.559Z",
+  "browser": "/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
+  "startedAt": "2026-09-15T09:46:05.459Z",
   "consoleErrors": [],
   "mockWrites": [
     "[mock write] getBootstrap",
@@ -30,6 +30,15 @@
     "[mock write] saveRow Object",
     "[mock write] saveRow Object",
     "[mock write] deleteRow Object",
+    "[mock write] saveEffortWeek Object",
+    "[mock write] saveEffortWeek Object",
+    "[mock write] saveAssignments Object",
+    "[mock write] restoreHistory Object",
+    "[mock write] saveRow Object",
+    "[mock write] saveRow Object",
+    "[mock write] saveRow Object",
+    "[mock write] bulkMilestone Object",
+    "[mock write] bulkMilestone Object",
     "[mock write] getBootstrap"
   ],
   "tabs": {
@@ -157,99 +166,114 @@
   },
   "screenshots": [
     {
-      "file": "preview\\screenshots\\A.png",
+      "file": "preview/screenshots/A.png",
       "width": 1920,
-      "height": 2187
+      "height": 2190
     },
     {
-      "file": "preview\\screenshots\\B.png",
+      "file": "preview/screenshots/B.png",
       "width": 1920,
-      "height": 1958
+      "height": 1954
     },
     {
-      "file": "preview\\screenshots\\C.png",
+      "file": "preview/screenshots/C.png",
       "width": 1920,
-      "height": 1652
+      "height": 2241
     },
     {
-      "file": "preview\\screenshots\\D.png",
+      "file": "preview/screenshots/D.png",
       "width": 1920,
-      "height": 1851
+      "height": 1850
     },
     {
-      "file": "preview\\screenshots\\E.png",
+      "file": "preview/screenshots/E.png",
       "width": 1920,
-      "height": 1279
+      "height": 1278
     },
     {
-      "file": "preview\\screenshots\\A-1280.png",
+      "file": "preview/screenshots/A-1280.png",
       "width": 1280,
-      "height": 2187
+      "height": 2190
     },
     {
-      "file": "preview\\screenshots\\B-1280.png",
+      "file": "preview/screenshots/B-1280.png",
       "width": 1280,
-      "height": 1977
+      "height": 1973
     },
     {
-      "file": "preview\\screenshots\\C-1280.png",
+      "file": "preview/screenshots/C-1280.png",
       "width": 1280,
-      "height": 1652
+      "height": 2241
     },
     {
-      "file": "preview\\screenshots\\D-1280.png",
+      "file": "preview/screenshots/D-1280.png",
       "width": 1280,
-      "height": 1851
+      "height": 1850
     },
     {
-      "file": "preview\\screenshots\\E-1280.png",
+      "file": "preview/screenshots/E-1280.png",
       "width": 1280,
-      "height": 1399
+      "height": 1398
     },
     {
-      "file": "preview\\screenshots\\A-dark.png",
+      "file": "preview/screenshots/A-dark.png",
       "width": 1920,
-      "height": 2187
+      "height": 2190
     },
     {
-      "file": "preview\\screenshots\\B-dark.png",
+      "file": "preview/screenshots/B-dark.png",
       "width": 1920,
-      "height": 1958
+      "height": 1954
     },
     {
-      "file": "preview\\screenshots\\C-dark.png",
+      "file": "preview/screenshots/C-dark.png",
       "width": 1920,
-      "height": 1652
+      "height": 2241
     },
     {
-      "file": "preview\\screenshots\\D-dark.png",
+      "file": "preview/screenshots/D-dark.png",
       "width": 1920,
-      "height": 1851
+      "height": 1850
     },
     {
-      "file": "preview\\screenshots\\E-dark.png",
+      "file": "preview/screenshots/E-dark.png",
       "width": 1920,
-      "height": 1279
+      "height": 1278
     },
     {
-      "file": "preview\\screenshots\\form-project.png",
+      "file": "preview/screenshots/form-project.png",
       "width": 1920,
       "height": 2888
     },
     {
-      "file": "preview\\screenshots\\effort-editor.png",
+      "file": "preview/screenshots/effort-editor.png",
       "width": 1920,
-      "height": 1749
+      "height": 2339
     },
     {
-      "file": "preview\\screenshots\\block-picker.png",
+      "file": "preview/screenshots/block-picker.png",
       "width": 1920,
-      "height": 2927
+      "height": 2912
     },
     {
-      "file": "preview\\screenshots\\items-open.png",
+      "file": "preview/screenshots/items-open.png",
       "width": 1920,
-      "height": 2524
+      "height": 2530
+    },
+    {
+      "file": "preview/screenshots/my-week.png",
+      "width": 1920,
+      "height": 2339
+    },
+    {
+      "file": "preview/screenshots/assign-guard.png",
+      "width": 1920,
+      "height": 2107
+    },
+    {
+      "file": "preview/screenshots/bulk-milestone.png",
+      "width": 1920,
+      "height": 3684
     }
   ],
   "writePaths": {
@@ -383,7 +407,8 @@
           "sheet": "프로젝트",
           "key": "P-2027-002",
           "action": "추가",
-          "summary": "행사명: 게이트 신규 프로젝트\n유형: ① 리멤버 MICE 솔루션\n상태: 견적\n행사 시작일: 2027-03-10\n행사 종료일: 2027-03-10\n계약금액(원): 0\n정산 행 자동 추가 · 표준 마일스톤 9건 생성"
+          "summary": "행사명: 게이트 신규 프로젝트\n유형: ① 리멤버 MICE 솔루션\n상태: 견적\n행사 시작일: 2027-03-10\n행사 종료일: 2027-03-10\n계약금액(원): 0\n정산 행 자동 추가 · 표준 마일스톤 9건 생성",
+          "backup": null
         },
         "selected": "P-2027-002",
         "card": true
@@ -407,7 +432,25 @@
           "sheet": "프로젝트",
           "key": "P-2027-002",
           "action": "수정",
-          "summary": "계약금액(원): 0 → 12345678"
+          "summary": "계약금액(원): 0 → 12345678",
+          "backup": {
+            "id": "P-2027-002",
+            "name": "게이트 신규 프로젝트",
+            "client": "",
+            "type": "① 리멤버 MICE 솔루션",
+            "status": "견적",
+            "pm": "",
+            "eventStart": "2027-03-10",
+            "eventEnd": "2027-03-10",
+            "kickoff": "",
+            "settlementDue": "",
+            "venue": "",
+            "guarantee": null,
+            "expectedAttendees": null,
+            "contractAmount": 0,
+            "note": "",
+            "createdAt": "2026-09-10"
+          }
         },
         "cardAmount": "계약 1,235만 원",
         "formOpen": false
@@ -441,7 +484,14 @@
           "sheet": "마일스톤",
           "key": "P-2027-002 · 게이트 마일스톤",
           "action": "수정",
-          "summary": "예정일: 2027-03-01 → 2027-03-02"
+          "summary": "예정일: 2027-03-01 → 2027-03-02",
+          "backup": {
+            "projectId": "P-2027-002",
+            "name": "게이트 마일스톤",
+            "due": "2027-03-01",
+            "done": "",
+            "owner": ""
+          }
         }
       },
       "afterFirstClick": {
@@ -462,7 +512,14 @@
           "sheet": "마일스톤",
           "key": "P-2027-002 · 게이트 마일스톤",
           "action": "삭제",
-          "summary": "마일스톤 행 삭제: P-2027-002 · 게이트 마일스톤"
+          "summary": "마일스톤 행 삭제: P-2027-002 · 게이트 마일스톤",
+          "backup": {
+            "projectId": "P-2027-002",
+            "name": "게이트 마일스톤",
+            "due": "2027-03-02",
+            "done": "",
+            "owner": ""
+          }
         }
       }
     },
@@ -507,7 +564,8 @@
           "role": "현장 운영",
           "capacityMd": 20,
           "status": "재직",
-          "color": ""
+          "color": "",
+          "email": ""
         },
         "listed": true,
         "deleteButton": true,
@@ -535,7 +593,15 @@
           "sheet": "팀원",
           "key": "게이트 팀원",
           "action": "삭제",
-          "summary": "팀원 행 삭제: 게이트 팀원"
+          "summary": "팀원 행 삭제: 게이트 팀원",
+          "backup": {
+            "name": "게이트 팀원",
+            "role": "현장 운영",
+            "capacityMd": 20,
+            "status": "재직",
+            "color": "",
+            "email": ""
+          }
         }
       }
     },
@@ -602,7 +668,8 @@
           "sheet": "공수기록",
           "key": "2026-08-31 · 팀원5",
           "action": "저장",
-          "summary": "실투입 M/D 합계: 2 (1행)\n프로젝트ID P-2026-001: 2"
+          "summary": "실투입 M/D 합계: 2 (1행)\n프로젝트ID P-2026-001: 2",
+          "backup": []
         },
         "missingLog": []
       }
@@ -651,7 +718,103 @@
           "sheet": "프로젝트",
           "key": "P-2027-002",
           "action": "삭제",
-          "summary": "프로젝트 행 삭제: P-2027-002\n함께 삭제: 마일스톤 9 · 정산 1"
+          "summary": "프로젝트 행 삭제: P-2027-002\n함께 삭제: 마일스톤 9 · 정산 1",
+          "backup": {
+            "project": {
+              "id": "P-2027-002",
+              "name": "게이트 신규 프로젝트",
+              "client": "",
+              "type": "① 리멤버 MICE 솔루션",
+              "status": "견적",
+              "pm": "",
+              "eventStart": "2027-03-10",
+              "eventEnd": "2027-03-10",
+              "kickoff": "",
+              "settlementDue": "",
+              "venue": "",
+              "guarantee": null,
+              "expectedAttendees": null,
+              "contractAmount": 12345678,
+              "note": "",
+              "createdAt": "2026-09-10"
+            },
+            "assignments": [],
+            "milestones": [
+              {
+                "projectId": "P-2027-002",
+                "name": "계약 체결",
+                "due": "2026-12-10",
+                "done": "",
+                "owner": ""
+              },
+              {
+                "projectId": "P-2027-002",
+                "name": "발주처 기초자료 수령",
+                "due": "2027-01-19",
+                "done": "",
+                "owner": ""
+              },
+              {
+                "projectId": "P-2027-002",
+                "name": "답사",
+                "due": "2027-01-24",
+                "done": "",
+                "owner": ""
+              },
+              {
+                "projectId": "P-2027-002",
+                "name": "랜딩페이지 컨펌",
+                "due": "2027-02-03",
+                "done": "",
+                "owner": ""
+              },
+              {
+                "projectId": "P-2027-002",
+                "name": "운영계획서 확정",
+                "due": "2027-02-24",
+                "done": "",
+                "owner": ""
+              },
+              {
+                "projectId": "P-2027-002",
+                "name": "행사 7일 전 점검",
+                "due": "2027-03-03",
+                "done": "",
+                "owner": ""
+              },
+              {
+                "projectId": "P-2027-002",
+                "name": "행사 당일",
+                "due": "2027-03-10",
+                "done": "",
+                "owner": ""
+              },
+              {
+                "projectId": "P-2027-002",
+                "name": "정산보고 제출",
+                "due": "2027-03-15",
+                "done": "",
+                "owner": ""
+              },
+              {
+                "projectId": "P-2027-002",
+                "name": "정산 승인",
+                "due": "2027-04-09",
+                "done": "",
+                "owner": ""
+              }
+            ],
+            "settlement": {
+              "projectId": "P-2027-002",
+              "revenue": null,
+              "directCost": null,
+              "preReg": null,
+              "attended": null,
+              "status": "미착수"
+            },
+            "items": [],
+            "notes": []
+          }
         }
       }
     },
@@ -841,7 +1004,8 @@
           "sheet": "세부항목",
           "key": "P-2026-003 · 답사",
           "action": "추가",
-          "summary": "블럭 추가: 2건 · 건너뜀 0건\n블럭: 운영 PM / 베뉴 서칭·계약 (2), 운영 PM / 협력사 발주·관리 (2)\n첫 주석 2건 생성"
+          "summary": "블럭 추가: 2건 · 건너뜀 0건\n블럭: 운영 PM / 베뉴 서칭·계약 (2), 운영 PM / 협력사 발주·관리 (2)\n첫 주석 2건 생성",
+          "backup": null
         },
         "auto": [],
         "rollup": {
@@ -1022,7 +1186,8 @@
           "sheet": "주석",
           "key": "N-000007 · W-000007",
           "action": "추가",
-          "summary": "프로젝트ID: P-2026-003\n마일스톤: 답사\n세부ID: W-000007\n파트: 운영 PM\n유형: 질문\n내용: 게이트 질문"
+          "summary": "프로젝트ID: P-2026-003\n마일스톤: 답사\n세부ID: W-000007\n파트: 운영 PM\n유형: 질문\n내용: 게이트 질문",
+          "backup": null
         }
       },
       "afterResolve": {
@@ -1045,7 +1210,20 @@
           "sheet": "주석",
           "key": "N-000007 · W-000007",
           "action": "수정",
-          "summary": "해결: (빈 값) → 예"
+          "summary": "해결: (빈 값) → 예",
+          "backup": {
+            "id": "N-000007",
+            "projectId": "P-2026-003",
+            "milestone": "답사",
+            "itemId": "W-000007",
+            "part": "운영 PM",
+            "author": "미리보기 사용자",
+            "authorName": "",
+            "at": "2026-09-10 09:00:00",
+            "type": "질문",
+            "content": "게이트 질문",
+            "resolved": ""
+          }
         }
       },
       "authorRule": {
@@ -1179,9 +1357,777 @@
         "stored": "",
         "onChip": "전체"
       }
+    },
+    "myWeek": {
+      "link": true,
+      "opened": {
+        "tab": "C",
+        "card": true,
+        "fixed": "내 기록: 팀원1",
+        "memberSelect": false,
+        "week": "2026-08-31",
+        "rows": 6,
+        "sources": [
+          "배정",
+          "배정",
+          "배정",
+          "공통",
+          "공통",
+          "공통"
+        ],
+        "codes": [
+          "P-2026-001",
+          "P-2026-002",
+          "P-2026-003",
+          "G-내부",
+          "G-영업",
+          "G-휴가"
+        ],
+        "mds": [
+          "1.5",
+          "1.5",
+          "1",
+          "0.5",
+          "",
+          ""
+        ],
+        "memos": [
+          "행사 현장 총괄",
+          "운영계획 작성",
+          "협력사 조율",
+          "주간 회의",
+          "",
+          ""
+        ],
+        "badge": "이 주 기록 있음",
+        "total": "합계 4.5 M/D · 4행 기록",
+        "warn": "",
+        "logs": [
+          {
+            "week": "2026-08-31",
+            "member": "팀원1",
+            "projectId": "P-2026-001",
+            "md": 1.5,
+            "memo": "행사 현장 총괄",
+            "loggedAt": "2026-09-07 09:12"
+          },
+          {
+            "week": "2026-08-31",
+            "member": "팀원1",
+            "projectId": "P-2026-002",
+            "md": 1.5,
+            "memo": "운영계획 작성",
+            "loggedAt": "2026-09-07 09:12"
+          },
+          {
+            "week": "2026-08-31",
+            "member": "팀원1",
+            "projectId": "P-2026-003",
+            "md": 1,
+            "memo": "협력사 조율",
+            "loggedAt": "2026-09-07 09:12"
+          },
+          {
+            "week": "2026-08-31",
+            "member": "팀원1",
+            "projectId": "G-내부",
+            "md": 0.5,
+            "memo": "주간 회의",
+            "loggedAt": "2026-09-07 09:12"
+          }
+        ],
+        "missing": [],
+        "missingDom": 0,
+        "linkTodo": false
+      },
+      "overWarn": {
+        "shown": true,
+        "text": "이번 주 합계 9 M/D 가 주 5.0 을 넘습니다. 맞는지 확인하세요.",
+        "total": "합계 9.0 M/D · 4행 기록"
+      },
+      "cleared": 6,
+      "afterClear": {
+        "tab": "C",
+        "card": true,
+        "fixed": "내 기록: 팀원1",
+        "memberSelect": false,
+        "week": "2026-08-31",
+        "rows": 6,
+        "sources": [
+          "배정",
+          "배정",
+          "배정",
+          "공통",
+          "공통",
+          "공통"
+        ],
+        "codes": [
+          "P-2026-001",
+          "P-2026-002",
+          "P-2026-003",
+          "G-내부",
+          "G-영업",
+          "G-휴가"
+        ],
+        "mds": [
+          "",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "memos": [
+          "",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "badge": "이 주 기록 없음",
+        "total": "합계 0.0 M/D · 0행 기록",
+        "warn": "",
+        "logs": [],
+        "missing": [],
+        "missingDom": 0,
+        "linkTodo": true
+      },
+      "afterSave": {
+        "tab": "C",
+        "card": true,
+        "fixed": "내 기록: 팀원1",
+        "memberSelect": false,
+        "week": "2026-08-31",
+        "rows": 6,
+        "sources": [
+          "배정",
+          "배정",
+          "배정",
+          "공통",
+          "공통",
+          "공통"
+        ],
+        "codes": [
+          "P-2026-001",
+          "P-2026-002",
+          "P-2026-003",
+          "G-내부",
+          "G-영업",
+          "G-휴가"
+        ],
+        "mds": [
+          "2.5",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "memos": [
+          "게이트 주간 기록",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "badge": "이 주 기록 있음",
+        "total": "합계 2.5 M/D · 1행 기록",
+        "warn": "",
+        "logs": [
+          {
+            "week": "2026-08-31",
+            "member": "팀원1",
+            "projectId": "P-2026-001",
+            "md": 2.5,
+            "memo": "게이트 주간 기록",
+            "loggedAt": "2026-09-10 09:00"
+          }
+        ],
+        "missing": [],
+        "missingDom": 0,
+        "linkTodo": false
+      }
+    },
+    "copyPrevWeek": {
+      "prevWeek": "2026-08-24",
+      "before": {
+        "tab": "C",
+        "card": true,
+        "fixed": "내 기록: 팀원1",
+        "memberSelect": false,
+        "week": "2026-08-31",
+        "rows": 6,
+        "sources": [
+          "배정",
+          "배정",
+          "배정",
+          "공통",
+          "공통",
+          "공통"
+        ],
+        "codes": [
+          "P-2026-001",
+          "P-2026-002",
+          "P-2026-003",
+          "G-내부",
+          "G-영업",
+          "G-휴가"
+        ],
+        "mds": [
+          "2.5",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "memos": [
+          "게이트 주간 기록",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "badge": "이 주 기록 있음",
+        "total": "합계 2.5 M/D · 1행 기록",
+        "warn": "",
+        "logs": [
+          {
+            "week": "2026-08-31",
+            "member": "팀원1",
+            "projectId": "P-2026-001",
+            "md": 2.5,
+            "memo": "게이트 주간 기록",
+            "loggedAt": "2026-09-10 09:00"
+          }
+        ],
+        "missing": [],
+        "missingDom": 0,
+        "linkTodo": false
+      },
+      "prevLogs": [
+        {
+          "projectId": "P-2026-001",
+          "md": 2,
+          "memo": "행사 준비 점검"
+        },
+        {
+          "projectId": "P-2026-002",
+          "md": 1,
+          "memo": "일정 조율"
+        },
+        {
+          "projectId": "P-2026-003",
+          "md": 1,
+          "memo": "일정 수립"
+        },
+        {
+          "projectId": "G-내부",
+          "md": 0.5,
+          "memo": "주간 회의"
+        }
+      ],
+      "after": {
+        "tab": "C",
+        "card": true,
+        "fixed": "내 기록: 팀원1",
+        "memberSelect": false,
+        "week": "2026-08-31",
+        "rows": 6,
+        "sources": [
+          "배정",
+          "배정",
+          "배정",
+          "공통",
+          "공통",
+          "공통"
+        ],
+        "codes": [
+          "P-2026-001",
+          "P-2026-002",
+          "P-2026-003",
+          "G-내부",
+          "G-영업",
+          "G-휴가"
+        ],
+        "mds": [
+          "2",
+          "1",
+          "1",
+          "0.5",
+          "",
+          ""
+        ],
+        "memos": [
+          "행사 준비 점검",
+          "일정 조율",
+          "일정 수립",
+          "주간 회의",
+          "",
+          ""
+        ],
+        "badge": "이 주 기록 있음",
+        "total": "합계 4.5 M/D · 4행 기록",
+        "warn": "",
+        "logs": [
+          {
+            "week": "2026-08-31",
+            "member": "팀원1",
+            "projectId": "P-2026-001",
+            "md": 2.5,
+            "memo": "게이트 주간 기록",
+            "loggedAt": "2026-09-10 09:00"
+          }
+        ],
+        "missing": [],
+        "missingDom": 0,
+        "linkTodo": false
+      }
+    },
+    "assignGuard": {
+      "projectId": "P-2026-002",
+      "before": {
+        "editRows": 4,
+        "domRows": 4,
+        "saved": 4,
+        "guard": false,
+        "guardText": "",
+        "guardLines": 0,
+        "saveDisabled": false
+      },
+      "cutMember": "팀원4",
+      "warned": {
+        "editRows": 3,
+        "domRows": 3,
+        "saved": 4,
+        "guard": true,
+        "guardText": "저장하면 배정 1행이 사라집니다. 맞는지 확인하세요.팀원4 · 디자인·제작 · 6.0 M/D · 2026-08-10 ~ 2026-09-18함께 저장되는 행: 새로 추가 0행 · 내용 변경 3행. 사라진 행은 시트 [변경이력] 탭에 백업으로 남고, E 화면 \"최근 변경\"",
+        "guardLines": 1,
+        "saveDisabled": true
+      },
+      "cancelled": {
+        "editRows": 4,
+        "domRows": 4,
+        "saved": 4,
+        "guard": false,
+        "guardText": "",
+        "guardLines": 0,
+        "saveDisabled": false
+      }
+    },
+    "restoreHistory": {
+      "projectId": "P-2026-002",
+      "before": 4,
+      "afterSave": {
+        "editRows": 4,
+        "domRows": 4,
+        "saved": 4,
+        "guard": false,
+        "guardText": "",
+        "guardLines": 0,
+        "saveDisabled": false
+      },
+      "index": 0,
+      "cell": {
+        "button": true,
+        "note": "배정 P-2026-002 을(를) 저장 전 3행으로 되돌립니다."
+      },
+      "confirm": {
+        "shown": true,
+        "assignments": 4
+      },
+      "after": {
+        "assignments": 3,
+        "total": 15,
+        "ids": [
+          "A-0005",
+          "A-0006",
+          "A-0007"
+        ],
+        "history0": {
+          "at": "2026-09-10 09:00:00",
+          "user": "미리보기 사용자",
+          "sheet": "배정",
+          "key": "P-2026-002",
+          "action": "되돌림",
+          "summary": "배정 저장을 되돌림: 3행으로 교체\n대상: P-2026-002",
+          "backup": [
+            {
+              "id": "A-0005",
+              "projectId": "P-2026-002",
+              "member": "팀원1",
+              "role": "운영 PM",
+              "plannedMd": 20,
+              "start": "2026-07-01",
+              "end": "2026-10-09",
+              "status": "진행",
+              "note": "전체 총괄"
+            },
+            {
+              "id": "A-0006",
+              "projectId": "P-2026-002",
+              "member": "팀원2",
+              "role": "모객",
+              "plannedMd": 9,
+              "start": "2026-08-03",
+              "end": "2026-09-23",
+              "status": "진행",
+              "note": "참가자 모집"
+            },
+            {
+              "id": "A-0007",
+              "projectId": "P-2026-002",
+              "member": "팀원3",
+              "role": "현장 운영",
+              "plannedMd": 8,
+              "start": "2026-09-15",
+              "end": "2026-10-20",
+              "status": "진행",
+              "note": "현장 준비·철수"
+            },
+            {
+              "id": "A-0017",
+              "projectId": "P-2026-002",
+              "member": "팀원4",
+              "role": "디자인·제작",
+              "plannedMd": 2,
+              "start": "2026-08-06",
+              "end": "2026-08-20",
+              "status": "예정",
+              "note": "자동(세부항목)"
+            }
+          ]
+        },
+        "editRows": 3
+      },
+      "blocked": {
+        "index": 19,
+        "button": false,
+        "reason": "프로젝트 삭제는 배정·마일스톤·정산이 함께 지워져 되돌릴 수 없습니다. 새 프로젝트로 다시 등록하세요."
+      }
+    },
+    "bulkComplete": {
+      "setup": [
+        "답사",
+        "랜딩페이지 컨펌",
+        "운영계획서 확정"
+      ],
+      "start": {
+        "rows": [
+          "P-2026-004|답사",
+          "P-2026-004|랜딩페이지 컨펌",
+          "P-2026-004|운영계획서 확정"
+        ],
+        "checked": 0,
+        "bar": false,
+        "count": "",
+        "panel": "",
+        "done": "",
+        "preview": "",
+        "confirmShown": false,
+        "selectAll": "전체 선택"
+      },
+      "all": {
+        "rows": [
+          "P-2026-004|답사",
+          "P-2026-004|랜딩페이지 컨펌",
+          "P-2026-004|운영계획서 확정"
+        ],
+        "checked": 3,
+        "bar": true,
+        "count": "3건 선택됨",
+        "panel": "",
+        "done": "",
+        "preview": "",
+        "confirmShown": false,
+        "selectAll": "선택 해제"
+      },
+      "two": {
+        "rows": [
+          "P-2026-004|답사",
+          "P-2026-004|랜딩페이지 컨펌",
+          "P-2026-004|운영계획서 확정"
+        ],
+        "checked": 2,
+        "bar": true,
+        "count": "2건 선택됨",
+        "panel": "",
+        "done": "",
+        "preview": "",
+        "confirmShown": false,
+        "selectAll": "전체 선택"
+      },
+      "panel": {
+        "rows": [
+          "P-2026-004|답사",
+          "P-2026-004|랜딩페이지 컨펌",
+          "P-2026-004|운영계획서 확정"
+        ],
+        "checked": 2,
+        "bar": true,
+        "count": "2건 선택됨",
+        "panel": "complete",
+        "done": "2026-09-10",
+        "preview": "답사: 완료일 (빈 값) → 2026-09-10 · 랜딩페이지 컨펌: 완료일 (빈 값) → 2026-09-10",
+        "confirmShown": false,
+        "selectAll": "전체 선택"
+      },
+      "confirm": {
+        "rows": [
+          "P-2026-004|답사",
+          "P-2026-004|랜딩페이지 컨펌",
+          "P-2026-004|운영계획서 확정"
+        ],
+        "checked": 2,
+        "bar": true,
+        "count": "2건 선택됨",
+        "panel": "complete",
+        "done": "2026-09-10",
+        "preview": "답사: 완료일 (빈 값) → 2026-09-10 · 랜딩페이지 컨펌: 완료일 (빈 값) → 2026-09-10",
+        "confirmShown": true,
+        "selectAll": "전체 선택"
+      },
+      "beforeRun": 0,
+      "after": {
+        "rows": [
+          "P-2026-004|운영계획서 확정"
+        ],
+        "checked": 0,
+        "bar": false,
+        "count": "",
+        "panel": "",
+        "done": "",
+        "preview": "",
+        "confirmShown": false,
+        "selectAll": "전체 선택"
+      },
+      "rows": [
+        {
+          "name": "답사",
+          "due": "2026-08-05",
+          "done": "2026-09-10"
+        },
+        {
+          "name": "랜딩페이지 컨펌",
+          "due": "2026-08-06",
+          "done": "2026-09-10"
+        },
+        {
+          "name": "운영계획서 확정",
+          "due": "2026-08-07",
+          "done": ""
+        },
+        {
+          "name": "행사 7일 전 점검",
+          "due": "2026-11-26",
+          "done": ""
+        },
+        {
+          "name": "행사 당일",
+          "due": "2026-12-03",
+          "done": ""
+        },
+        {
+          "name": "정산보고 제출",
+          "due": "2026-12-09",
+          "done": ""
+        },
+        {
+          "name": "정산 승인",
+          "due": "2027-01-03",
+          "done": ""
+        }
+      ],
+      "history0": {
+        "at": "2026-09-10 09:00:00",
+        "user": "미리보기 사용자",
+        "sheet": "마일스톤",
+        "key": "일괄 완료 처리 2건",
+        "action": "저장",
+        "summary": "일괄 완료 처리: 2건\n대상: P-2026-004 · 답사 → 완료 2026-09-10, P-2026-004 · 랜딩페이지 컨펌 → 완료 2026-09-10",
+        "backup": [
+          {
+            "projectId": "P-2026-004",
+            "name": "답사",
+            "due": "2026-08-05",
+            "done": "",
+            "owner": "팀원1"
+          },
+          {
+            "projectId": "P-2026-004",
+            "name": "랜딩페이지 컨펌",
+            "due": "2026-08-06",
+            "done": "",
+            "owner": ""
+          }
+        ]
+      }
+    },
+    "bulkShift": {
+      "before": [
+        {
+          "name": "운영계획서 확정",
+          "due": "2026-08-07"
+        },
+        {
+          "name": "행사 7일 전 점검",
+          "due": "2026-11-26"
+        },
+        {
+          "name": "행사 당일",
+          "due": "2026-12-03"
+        },
+        {
+          "name": "정산보고 제출",
+          "due": "2026-12-09"
+        },
+        {
+          "name": "정산 승인",
+          "due": "2027-01-03"
+        }
+      ],
+      "panel": {
+        "rows": [
+          "P-2026-004|운영계획서 확정"
+        ],
+        "checked": 1,
+        "bar": true,
+        "count": "1건 선택됨",
+        "panel": "shift",
+        "done": "",
+        "preview": "운영계획서 확정: 예정일 2026-08-07 → 2026-08-14",
+        "confirmShown": false,
+        "selectAll": "선택 해제"
+      },
+      "filled": {
+        "rows": [
+          "P-2026-004|운영계획서 확정"
+        ],
+        "checked": 1,
+        "bar": true,
+        "count": "1건 선택됨",
+        "panel": "shift",
+        "done": "",
+        "preview": "운영계획서 확정: 예정일 2026-08-07 → 2026-08-14",
+        "confirmShown": false,
+        "selectAll": "선택 해제"
+      },
+      "confirm": {
+        "rows": [
+          "P-2026-004|운영계획서 확정"
+        ],
+        "checked": 1,
+        "bar": true,
+        "count": "1건 선택됨",
+        "panel": "shift",
+        "done": "",
+        "preview": "운영계획서 확정: 예정일 2026-08-07 → 2026-08-14",
+        "confirmShown": true,
+        "selectAll": "선택 해제"
+      },
+      "after": {
+        "rows": [
+          {
+            "name": "운영계획서 확정",
+            "due": "2026-08-14"
+          },
+          {
+            "name": "행사 7일 전 점검",
+            "due": "2026-11-26"
+          },
+          {
+            "name": "행사 당일",
+            "due": "2026-12-03"
+          },
+          {
+            "name": "정산보고 제출",
+            "due": "2026-12-09"
+          },
+          {
+            "name": "정산 승인",
+            "due": "2027-01-03"
+          }
+        ],
+        "history0": {
+          "at": "2026-09-10 09:00:00",
+          "user": "미리보기 사용자",
+          "sheet": "마일스톤",
+          "key": "일괄 예정일 조정 1건",
+          "action": "저장",
+          "summary": "일괄 예정일 조정: 1건\n대상: P-2026-004 · 운영계획서 확정 → 예정 2026-08-14",
+          "backup": [
+            {
+              "projectId": "P-2026-004",
+              "name": "운영계획서 확정",
+              "due": "2026-08-07",
+              "done": "",
+              "owner": "팀원1"
+            }
+          ]
+        }
+      }
+    },
+    "derivedCatalog": {
+      "roles": [
+        "영업",
+        "모객",
+        "운영 PM",
+        "현장 운영",
+        "디자인·제작",
+        "정산·리포트"
+      ],
+      "baseDerived": [],
+      "baseCovers": true,
+      "plusDerived": [
+        "운영총괄"
+      ],
+      "plusCount": 5,
+      "derivedBlocks": [
+        "업무 범위 정리",
+        "담당자 배정·일정 합의",
+        "진행 상황 점검",
+        "행사 당일 대응",
+        "결과 정리·인수인계"
+      ],
+      "generic": [
+        "업무 범위 정리",
+        "담당자 배정·일정 합의",
+        "진행 상황 점검",
+        "행사 당일 대응",
+        "결과 정리·인수인계"
+      ],
+      "parts": {
+        "영업": 4,
+        "모객": 5,
+        "운영 PM": 8,
+        "현장 운영": 6,
+        "디자인·제작": 6,
+        "정산·리포트": 4,
+        "운영총괄": 5
+      }
+    },
+    "derivedCatalogScreen": {
+      "before": {
+        "options": [],
+        "picked": ""
+      },
+      "derived": {
+        "chips": [],
+        "note": "",
+        "part": ""
+      }
     }
   },
-  "failures": [],
+  "failures": [
+    "내 주간 공수: 값을 비우고 저장 → 기록 삭제·E 미기록 +1 실패: {\"logs\":0,\"missing\":[],\"dom\":0,\"badge\":\"이 주 기록 없음\"}",
+    "되돌리기 준비: [계속 저장] 뒤 배정이 1행 줄지 않음 (4 → 4)",
+    "되돌리기: [확인] 후 행 수가 저장 전으로 돌아오지 않음: {\"assignments\":3,\"total\":15,\"ids\":[\"A-0005\",\"A-0006\",\"A-0007\"],\"history0\":{\"at\":\"2026-09-10 09:00:00\",\"user\":\"미리보기 사용자\",\"sheet\":\"배정\",\"key\":\"P-2026-002\",\"action\":\"되돌림\",\"summary\":\"배정 저장을 되돌림: 3행으로 교체\\n대상: P-2026-002\",\"backup\":[{\"id\":\"A-0005\",\"projectId\":\"P-2026-002\",\"member\":\"팀원1\",\"role\":\"운영 PM\",\"plannedMd\":20,\"start\":\"2026-07-01\",\"end\":\"2026-10-09\",\"status\":\"진행\",\"note\":\"전체 총괄\"},{\"id\":\"A-0006\",\"projectId\":\"P-2026-002\",\"member\":\"팀원2\",\"role\":\"모객\",\"plannedMd\":9,\"start\":\"2026-08-03\",\"end\":\"2026-09-23\",\"status\":\"진행\",\"note\":\"참가자 모집\"},{\"id\":\"A-0007\",\"projectId\":\"P-2026-002\",\"member\":\"팀원3\",\"role\":\"현장 운영\",\"plannedMd\":8,\"start\":\"2026-09-15\",\"end\":\"2026-10-20\",\"status\":\"진행\",\"note\":\"현장 준비·철수\"},{\"id\":\"A-0017\",\"projectId\":\"P-2026-002\",\"member\":\"팀원4\",\"role\":\"디자인·제작\",\"plannedMd\":2,\"start\":\"2026-08-06\",\"end\":\"2026-08-20\",\"status\":\"예정\",\"note\":\"자동(세부항목)\"}]},\"editRows\":3}",
+    "파생 카탈로그: 블럭 추가 창의 파트 목록이 역할 목록을 따르지 않음: {\"options\":[],\"picked\":\"\"}",
+    "파생 카탈로그: 파트 \"운영총괄\" 선택 시 공통 블럭 5종·안내 문구가 나오지 않음: {\"chips\":[],\"note\":\"\",\"part\":\"\"}"
+  ],
   "timelineTip": {
     "rows": 5,
     "shown": true,
@@ -1189,5 +2135,5 @@
     "hiddenAfter": true
   },
   "consoleErrorCount": 0,
-  "finishedAt": "2026-09-14T07:29:17.860Z"
+  "finishedAt": "2026-09-15T09:46:56.708Z"
 }

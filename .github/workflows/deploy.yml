@@ -1,0 +1,104 @@
+# clasp 자동 배포 — Apps Script 에 밀어 넣고 같은 배포 ID 로 새 버전 (결정 D24)
+#
+# 배포 ID 를 고정(`create-deployment -i <배포ID>`)하기 때문에 **웹앱 주소가 바뀌지 않는다**.
+# 자격증명은 저장소에 두지 않는다 — GitHub Secret 3개로만 받는다(가이드 §10.7).
+#   CLASPRC_JSON        로컬 `npx clasp login` 이 만든 ~/.clasprc.json 전체 내용
+#   CLASP_SCRIPT_ID     Apps Script 프로젝트 ID
+#   CLASP_DEPLOYMENT_ID 고정할 배포 ID (AKfycb… 로 시작)
+# Secret 이 하나라도 없으면 실패가 아니라 "설정이 아직 없다" 는 안내를 남기고 건너뛴다.
+#
+# 액션 버전: actions/checkout v7 · actions/setup-node v7 — 2026-09-15 확인.
+# clasp: @google/clasp 3.4.1 기준(2026-09-15 npm 확인). 3.x 에서 `deploy -i <id>` 는
+#   `create-deployment -i <id>`(= `update-deployment <id>`) 로 이름이 바뀌었다.
+
+name: clasp 배포
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'apps-script/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: clasp-deploy
+  cancel-in-progress: false
+
+jobs:
+  # 배포 전에 검수 게이트가 먼저 통과해야 한다
+  gate:
+    uses: ./.github/workflows/gate.yml
+
+  deploy:
+    name: Apps Script 배포
+    needs: gate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 저장소 가져오기
+        uses: actions/checkout@v7
+
+      - name: Node 22 준비
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      - name: Secret 3개가 등록돼 있는지 확인
+        id: secrets
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+          CLASP_SCRIPT_ID: ${{ secrets.CLASP_SCRIPT_ID }}
+          CLASP_DEPLOYMENT_ID: ${{ secrets.CLASP_DEPLOYMENT_ID }}
+        run: |
+          missing=""
+          if [ -z "$CLASPRC_JSON" ]; then missing="$missing CLASPRC_JSON"; fi
+          if [ -z "$CLASP_SCRIPT_ID" ]; then missing="$missing CLASP_SCRIPT_ID"; fi
+          if [ -z "$CLASP_DEPLOYMENT_ID" ]; then missing="$missing CLASP_DEPLOYMENT_ID"; fi
+          if [ -n "$missing" ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=자동 배포 설정이 아직 없습니다::등록되지 않은 Secret:$missing — 저장소 Settings → Secrets and variables → Actions 에서 등록하면 다음 병합부터 자동 배포됩니다(가이드 §10.7). 이번에는 배포를 건너뜁니다."
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+            echo "Secret 3개 확인 완료."
+          fi
+
+      - name: clasp 설치 (devDependencies 한 개)
+        if: steps.secrets.outputs.ready == 'true'
+        run: npm install --no-audit --no-fund
+
+      - name: 자격증명·프로젝트 설정 만들기 (로그에 값을 찍지 않는다)
+        if: steps.secrets.outputs.ready == 'true'
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+          CLASP_SCRIPT_ID: ${{ secrets.CLASP_SCRIPT_ID }}
+          CLASP_DEPLOYMENT_ID: ${{ secrets.CLASP_DEPLOYMENT_ID }}
+        run: |
+          echo "::add-mask::$CLASP_SCRIPT_ID"
+          echo "::add-mask::$CLASP_DEPLOYMENT_ID"
+          printf '%s' "$CLASPRC_JSON" > "$HOME/.clasprc.json"
+          chmod 600 "$HOME/.clasprc.json"
+          node -e "require('fs').writeFileSync('.clasp.json', JSON.stringify({ scriptId: process.env.CLASP_SCRIPT_ID, rootDir: 'apps-script' }, null, 2) + '\n')"
+          echo "자격증명(~/.clasprc.json)과 .clasp.json 을 이 실행 안에서만 만들었습니다(저장소에는 커밋되지 않습니다)."
+
+      - name: apps-script/ 올리기 (clasp push)
+        if: steps.secrets.outputs.ready == 'true'
+        run: npx clasp push -f
+
+      - name: 같은 배포 ID 로 새 버전 (웹앱 주소 유지)
+        if: steps.secrets.outputs.ready == 'true'
+        env:
+          CLASP_DEPLOYMENT_ID: ${{ secrets.CLASP_DEPLOYMENT_ID }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+        run: |
+          echo "::add-mask::$CLASP_DEPLOYMENT_ID"
+          DESC="$(printf '%s' "$COMMIT_MSG" | head -n 1 | cut -c1-90)"
+          if [ -z "$DESC" ]; then DESC="수동 배포 ${GITHUB_SHA:0:7}"; fi
+          npx clasp create-deployment -i "$CLASP_DEPLOYMENT_ID" -d "$DESC"
+          echo "::notice title=배포 완료::웹앱 주소는 그대로입니다. 팀에는 '대시보드 새로고침(F5)' 만 알리면 됩니다. 설명: $DESC"
+
+      - name: 자격증명 지우기
+        if: always()
+        run: rm -f "$HOME/.clasprc.json" .clasp.json
