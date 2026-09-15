@@ -14,6 +14,10 @@
 //   5c. 5턴 쓰기 게이트 3-13~3-18 — 블럭 추가(카탈로그 → 세부 항목 + 첫 주석 · 재실행 건너뜀) · 담당 지정 → 배정 자동 행(B "자동" 배지 · 히트맵 · overlaps 배지) ·
 //       주석 남기기/해결 · 세부 항목 삭제(주석 연쇄 · 자동 행 갱신) · E 핵심 항목 미배정/미해결 목록 · 마일스톤 삭제 거부(세부 항목 있음) · 파트 필터
 //       → 스크린샷 items-open.png(세부 항목 펼침) · block-picker.png(블럭 추가 창) 추가
+//   5d. 6턴 쓰기 게이트 3-20~3-26 — 내 주간 공수(행 자동 제시 · 합계/초과 경고 · 저장 → E 미기록 증감 · 이름 선택 + 브라우저 기억) ·
+//       지난주 값 복사 · 배정 저장 가드(경고 → 취소 → 행 복원) · 되돌리기(배정 저장 1건 복원 · 불가 사유 표시) ·
+//       마일스톤 일괄 완료 처리 / 예정일 일괄 조정(+7일, 2단계 확인) · 파생 카탈로그(블럭 없는 파트 → 공통 블럭)
+//       → 스크린샷 my-week.png(내 주간 공수) · assign-guard.png(저장 가드) · bulk-milestone.png(일괄 처리) 추가
 //   6. 결과를 preview/screenshots/render-report.json 에 기록하고, 오류가 있으면 종료 코드 1
 //
 // 실행: node scripts/render-check.js   (node 가 PATH 에 없으면 전체 경로로)
@@ -1256,6 +1260,31 @@ async function main() {
     else ok(`되돌리기: [확인] → 배정 ${s23.afterSave.ids.join(',')} → ${s23.after.ids.join(',')} (저장 전 ${s23.after.manual}행 복원) · 변경이력 "되돌림"`);
     if (s23.blocked && (s23.blocked.button || !/되돌릴 수 없습니다/.test(s23.blocked.reason))) fail('되돌리기: 프로젝트 삭제 이력에 버튼 대신 사유가 표시되지 않음: ' + JSON.stringify(s23.blocked));
     else if (s23.blocked) ok(`되돌리기 불가 표시: 프로젝트 삭제 → "${s23.blocked.reason.slice(0, 50)}…"`);
+    // '추가' 의 되돌리기 = 그 행 삭제 — 참조가 없는 새 팀원으로 확인
+    await evalJson(cdp, `(window.TeamBoard.goTab('B'), true)`);
+    await sleep(200);
+    await clickSel(cdp, '#member-admin [data-action="open-form"][data-table="members"][data-mode="new"]');
+    await sleep(250);
+    await setInput(cdp, '#edit-form [data-form-field="name"]', '되돌리기 팀원');
+    await setInput(cdp, '#edit-form [data-form-field="role"]', '현장 운영');
+    await clickSel(cdp, '#edit-form [data-action="form-save"]');
+    await sleep(500);
+    const s23b = { added: await evalJson(cdp, `window.TeamBoard.state.data.members.length`) };
+    await evalJson(cdp, `(window.TeamBoard.goTab('E'), true)`);
+    await sleep(300);
+    s23b.index = await evalJson(cdp, `window.TeamBoard.state.data.history.findIndex(h => h.sheet === '팀원' && h.action === '추가' && h.key === '되돌리기 팀원')`);
+    s23b.cell = await evalJson(cdp, `(() => { const c = document.querySelector('#history-list [data-history-row="${s23b.index}"] .tb-restore-cell');
+      return { button: !!(c && c.querySelector('[data-action="restore-history"]')), note: c ? (c.querySelector('.tb-restore-note') || {}).textContent || '' : '' }; })()`);
+    await clickSel(cdp, `#history-list [data-history-row="${s23b.index}"] [data-action="restore-history"]`);
+    await sleep(250);
+    await clickSel(cdp, `#history-list [data-action="confirm-yes"][data-confirm-action="restore-history"][data-project="${s23b.index}"]`);
+    await sleep(700);
+    s23b.after = await evalJson(cdp, `(() => { const d = window.TeamBoard.state.data; return { members: d.members.length, gone: !d.members.some(m => m.name === '되돌리기 팀원'), history0: (d.history || [])[0] || null }; })()`);
+    report.writePaths.restoreAdd = s23b;
+    if (!(s23b.cell.button && /지웁니다/.test(s23b.cell.note))) fail('되돌리기(추가): 버튼·안내가 없음: ' + JSON.stringify(s23b.cell));
+    else ok(`되돌리기(추가): 버튼 표시 · 안내 "${s23b.cell.note}"`);
+    if (!(s23b.after.gone && s23b.after.members === s23b.added - 1 && s23b.after.history0 && s23b.after.history0.action === '되돌림')) fail('되돌리기(추가): 확인 후 그 행이 지워지지 않음: ' + JSON.stringify(s23b.after));
+    else ok(`되돌리기(추가): [확인] → 팀원 ${s23b.added} → ${s23b.after.members}명("되돌리기 팀원" 삭제) · 변경이력 "되돌림"`);
 
     // ---- 3-24 마일스톤 일괄 완료 처리 — 2건 선택 → 완료 처리 → 지연 −2 ----
     console.log('\n[3-24] 마일스톤 일괄 완료 처리');

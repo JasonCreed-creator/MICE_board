@@ -2392,6 +2392,17 @@ const SAMPLE_DATA = {
     '마일스톤': 'milestones', '정산': 'settlements', '세부항목': 'items', '주석': 'notes'
   };
 
+  /* 연쇄 삭제 백업의 봉투 키 — 표 행에는 이 키만으로 이루어진 경우가 없다 */
+  var CASCADE_KEYS = { project: 1, projects: 1, assignments: 1, milestones: 1, settlements: 1, effortLogs: 1, items: 1, notes: 1, item: 1, milestone: 1 };
+
+  function isCascadeBackup(row) {
+    if (!row || typeof row !== 'object' || Array.isArray(row)) { return false; }
+    var keys = Object.keys(row);
+    if (!keys.length) { return false; }
+    for (var i = 0; i < keys.length; i++) { if (!CASCADE_KEYS[keys[i]]) { return false; } }
+    return true;
+  }
+
   function parseBackup(raw) {
     if (raw === null || raw === undefined) { return { ok: true, rows: [] }; }
     if (Array.isArray(raw)) { return { ok: true, rows: raw }; }
@@ -2427,6 +2438,11 @@ const SAMPLE_DATA = {
 
     if (name === 'projects' && action === '삭제') {
       return no('프로젝트 삭제는 배정·마일스톤·정산이 함께 지워져 되돌릴 수 없습니다. 새 프로젝트로 다시 등록하세요.');
+    }
+
+    /* 연쇄 삭제의 백업은 표 행이 아니라 여러 탭을 담은 묶음이다 — 그대로 되돌리면 엉뚱한 행이 생긴다 */
+    if (rows.some(isCascadeBackup)) {
+      return no('이 기록은 되돌리기로 복원할 수 없습니다(여러 탭이 함께 바뀐 기록). 시트의 [변경이력] 탭에서 "이전 행(백업)" 을 보고 직접 되돌리세요.');
     }
     if (rows.length === 0) {
       if (action === '추가') { return { ok: true, reason: '', table: name, rows: [], mode: 'delete' }; }

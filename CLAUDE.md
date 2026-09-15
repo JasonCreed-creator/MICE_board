@@ -50,7 +50,7 @@
 
 ## 4. 폴더 구조
 ```
-CLAUDE.md / PROGRESS.md / package.json / .clasp.json
+CLAUDE.md / PROGRESS.md / package.json / .clasp.json.example (실제 .clasp.json 은 커밋하지 않는다)
 .github/       workflows/gate.yml(검수 게이트 자동 실행) · workflows/deploy.yml(clasp 배포)
 docs/          SPEC-v1.md · DATA-CONTRACT.md · code-brief-T*.md
 src/           index.template.html · styles.css · schema.js · metrics.js · app.js   (원본 — 여기만 고친다)

@@ -42,7 +42,9 @@ jobs:
 
       - name: 2) 빌드 재현성 — 산출물이 src 와 같은지
         run: |
-          if ! git diff --exit-code; then
+          if ! git diff --quiet; then
+            echo "달라진 파일:"
+            git --no-pager diff --stat
             echo "::error title=빌드 산출물이 최신이 아닙니다::src/ 를 고친 뒤 'node scripts/build.js' 를 돌려 apps-script/index.html · apps-script/Code.gs · preview/dashboard-preview.html 까지 함께 커밋하세요."
             exit 1
           fi

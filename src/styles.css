@@ -550,7 +550,7 @@ table.tb-table tr.is-auto input:disabled, table.tb-table tr.is-auto select:disab
   border-color: var(--orange); background: var(--orange-tint); color: var(--orange-deep); font-weight: 600;
 }
 .tb-my-week > h3 { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.tb-my-week .tb-toolbar .cap { flex: 1 1 220px; }
+.tb-my-week .tb-my-hint { flex: 1 1 220px; }
 .tb-my-member { font-size: 13px; color: var(--ink); background: var(--surface-warm); border-radius: 999px; padding: 6px 12px; }
 .tb-my-member strong { color: var(--orange-deep); }
 .tb-my-week .my-name { font-weight: 600; }

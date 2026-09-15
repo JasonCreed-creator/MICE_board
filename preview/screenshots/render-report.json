@@ -1,6 +1,6 @@
 {
   "browser": "/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
-  "startedAt": "2026-09-15T09:49:14.545Z",
+  "startedAt": "2026-09-15T10:05:56.544Z",
   "consoleErrors": [],
   "mockWrites": [
     "[mock write] getBootstrap",
@@ -34,6 +34,8 @@
     "[mock write] saveEffortWeek Object",
     "[mock write] saveEffortWeek Object",
     "[mock write] saveAssignments Object",
+    "[mock write] restoreHistory Object",
+    "[mock write] saveRow Object",
     "[mock write] restoreHistory Object",
     "[mock write] saveRow Object",
     "[mock write] saveRow Object",
@@ -274,7 +276,7 @@
     {
       "file": "preview/screenshots/bulk-milestone.png",
       "width": 1920,
-      "height": 3700
+      "height": 3539
     }
   ],
   "writePaths": {
@@ -1954,7 +1956,37 @@
       "blocked": {
         "index": 20,
         "button": false,
-        "reason": "프로젝트 삭제는 배정·마일스톤·정산이 함께 지워져 되돌릴 수 없습니다. 새 프로젝트로 다시 등록하세요."
+        "reason": "프로젝트 삭제는 배정·마일스톤·정산이 함께 지워져 되돌릴 수 없습니다. 새 프로젝…"
+      }
+    },
+    "restoreAdd": {
+      "added": 6,
+      "index": 0,
+      "cell": {
+        "button": true,
+        "note": "이 추가를 취소하고 행을 지웁니다."
+      },
+      "after": {
+        "members": 5,
+        "gone": true,
+        "history0": {
+          "at": "2026-09-10 09:00:00",
+          "user": "미리보기 사용자",
+          "sheet": "팀원",
+          "key": "되돌리기 팀원",
+          "action": "되돌림",
+          "summary": "팀원 추가를 되돌림: 1행 삭제\n대상: 되돌리기 팀원",
+          "backup": [
+            {
+              "name": "되돌리기 팀원",
+              "role": "현장 운영",
+              "capacityMd": 20,
+              "status": "재직",
+              "color": "",
+              "email": ""
+            }
+          ]
+        }
       }
     },
     "bulkComplete": {
@@ -2291,5 +2323,5 @@
     "hiddenAfter": true
   },
   "consoleErrorCount": 0,
-  "finishedAt": "2026-09-15T09:50:07.295Z"
+  "finishedAt": "2026-09-15T10:06:51.603Z"
 }
