@@ -5,7 +5,8 @@
     "sheetUrl": "",
     "today": "2026-09-10",
     "user": "미리보기 사용자",
-    "blocksSource": "default"
+    "blocksSource": "default",
+    "userMember": "팀원1"
   },
   "settings": {
     "statuses": [
@@ -114,35 +115,40 @@
       "role": "운영 PM",
       "capacityMd": 20,
       "status": "재직",
-      "color": "#EB6F2A"
+      "color": "#EB6F2A",
+      "email": "team1@example.com"
     },
     {
       "name": "팀원2",
       "role": "모객",
       "capacityMd": 20,
       "status": "재직",
-      "color": "#476580"
+      "color": "#476580",
+      "email": "team2@example.com"
     },
     {
       "name": "팀원3",
       "role": "현장 운영",
       "capacityMd": 20,
       "status": "재직",
-      "color": "#4A463F"
+      "color": "#4A463F",
+      "email": ""
     },
     {
       "name": "팀원4",
       "role": "디자인·제작",
       "capacityMd": 20,
       "status": "재직",
-      "color": "#8C867A"
+      "color": "#8C867A",
+      "email": "team4@example.com"
     },
     {
       "name": "팀원5",
       "role": "정산·리포트",
       "capacityMd": 20,
       "status": "재직",
-      "color": "#B8431A"
+      "color": "#B8431A",
+      "email": ""
     }
   ],
   "projects": [

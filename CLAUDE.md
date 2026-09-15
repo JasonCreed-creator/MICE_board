@@ -27,6 +27,14 @@
 | D14 | 파트 = 역할 6종. 파트별 업무 블럭 카탈로그(`업무블럭` 탭, 없으면 코드 기본값)에서 골라 넣고 블럭마다 M/D | 2026-09-14 |
 | D15 | 팀원 등급 없음. 임팩트·난이도는 표시만, 배정 담당자가 판단 | 2026-09-14 |
 | D16 | 주석: 유형 4종 · 작성자 이메일 자동 + 이름 선택 · 블럭의 "판단에 필요한 내용"을 첫 주석으로 · 본인만 수정 · 삭제는 시트 | 2026-09-14 |
+| D17 | `팀원` 탭 **`이메일`(F열)** 추가 — 선택 입력, 로그인 계정 ↔ 팀원 자동 매칭용. 회사 업무 계정만(개인 휴대폰·개인 메일은 계속 금지) | 2026-09-15 |
+| D18 | **내 주간 공수** 한 화면 — 내 배정 프로젝트 자동 제시 · 지난주 값 복사 · 합계·초과 경고 · 한 번에 저장 | 2026-09-15 |
+| D19 | **변경이력 되돌리기** — 백업이 있는 이력 행을 1클릭 복원, 복원도 `되돌림` 으로 기록. 프로젝트 삭제(연쇄)는 미지원 | 2026-09-15 |
+| D20 | **배정 저장 가드** — 저장으로 사라지는 행이 있으면 인라인 경고 + 2단계 확인 | 2026-09-15 |
+| D21 | **마일스톤 일괄 처리** — 다중 선택 → 완료 처리 / 예정일 조정. 변경이력 묶음 1건(백업 배열) | 2026-09-15 |
+| D22 | **업무 블럭 카탈로그 파생** — 역할 목록에 있는데 블럭이 0개인 파트는 공통 블럭 5종을 파생. 운영총괄·운영 Sub 전용 블럭 기본 카탈로그에 추가(33 → 44) | 2026-09-15 |
+| D23 | **CI 게이트** — GitHub Actions 가 push·PR 마다 빌드 재현성·테스트·실렌더·정적 검사 실행 | 2026-09-15 |
+| D24 | **clasp 배포** — 로컬 `npm run deploy` + `main` 병합 시 Actions 자동 배포. 배포 ID 고정으로 웹앱 주소 유지. 자격증명은 GitHub Secret | 2026-09-15 |
 
 ## 3. 작업 규칙
 - **시트가 SoT**: 대시보드는 시트를 직접 읽고 쓴다(별도 동기화 없음). 쓰기는 `docs/SPEC-v1.md` §5.2 에 열거된 경로만 — 새 경로를 만들면 SPEC·계약·`src/schema.js`·Code.gs·mock·테스트·게이트를 함께 고친다.
@@ -42,10 +50,11 @@
 
 ## 4. 폴더 구조
 ```
-CLAUDE.md / PROGRESS.md
+CLAUDE.md / PROGRESS.md / package.json / .clasp.json
+.github/       workflows/gate.yml(검수 게이트 자동 실행) · workflows/deploy.yml(clasp 배포)
 docs/          SPEC-v1.md · DATA-CONTRACT.md · code-brief-T*.md
 src/           index.template.html · styles.css · schema.js · metrics.js · app.js   (원본 — 여기만 고친다)
-scripts/       build.js(단일 파일 빌드 + Code.gs 블록) · render-check.js(Chrome 헤드리스 실렌더 게이트)
+scripts/       build.js(단일 파일 빌드 + Code.gs 블록) · render-check.js(Chrome 헤드리스 실렌더 게이트) · static-check.js(정적 검사)
 tests/         metrics.test.js · sample-data.test.js · schema.test.js
 apps-script/   Code.gs(손 유지 + 빌드 블록) · index.html(빌드 산출물) · appsscript.json
 mock/          sample-data.json

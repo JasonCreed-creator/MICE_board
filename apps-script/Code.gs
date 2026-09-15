@@ -1437,6 +1437,7 @@ const SAMPLE_DATA = {
   var DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
   var HEX_RE = /^#[0-9A-Fa-f]{6}$/;
   var PROJECT_ID_RE = /^P-\d{4}-\d{3,}$/;
+  var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;   // 6턴 D17 — 형식만 본다(도메인 제한 없음)
 
   /* 고정 열거값 — 계약 §2.2 (설정 탭에 두지 않는다) */
   var FIXED_ENUMS = {
@@ -1452,11 +1453,11 @@ const SAMPLE_DATA = {
   /* 5턴: 세부 항목 합계로 만든 배정 행의 표식(배정 탭 비고 열). 이 값이 있는 행만 동기화가 덮어쓴다 */
   var AUTO_ASSIGN_NOTE = '자동(세부항목)';
 
-  /* 변경이력 탭 — 계약 §3.9 */
+  /* 변경이력 탭 — 계약 §3.9 (6턴 D19: 되돌림 추가) */
   var HISTORY = {
     sheet: '변경이력',
     headers: ['일시', '사용자', '탭', '키', '동작', '변경 내용', '이전 행(백업)'],
-    actions: ['추가', '수정', '삭제', '저장']
+    actions: ['추가', '수정', '삭제', '저장', '되돌림']
   };
 
   /* 필드 정의 도우미 */
@@ -1527,13 +1528,15 @@ const SAMPLE_DATA = {
       ]
     },
     members: {
-      sheet: '팀원', label: '팀원', key: ['name'], width: 5, formulaCols: [],
+      sheet: '팀원', label: '팀원', key: ['name'], width: 6, formulaCols: [],
       fields: [
         f('name', 0, '이름', 'text', { required: true, immutable: true }),
         f('role', 1, '주역할', 'enum', { required: true, enumFrom: 'roles' }),
         f('capacityMd', 2, '월 가용 M/D', 'number', { step: 0.5 }),   // 빈 값 → settings.capacityMdPerMonth (normalize 에서)
         f('status', 3, '상태', 'enum', { enumFixed: 'memberStatus', emptyAs: '재직' }),
-        f('color', 4, '색상', 'color')
+        f('color', 4, '색상', 'color'),
+        /* 6턴 D17 — 회사 업무 계정. 비면 화면에서 이름을 고른다. 개인 연락처(휴대폰·개인 메일)는 넣지 않는다 */
+        f('email', 5, '이메일', 'text')
       ]
     },
     milestones: {
@@ -1645,7 +1648,31 @@ const SAMPLE_DATA = {
     b('정산·리포트', '정산서 작성', '정산보고 제출', 1, '상', '중', '매출·직접비 확정 여부'),
     b('정산·리포트', '결과 보고서', '정산보고 제출', 1, '중', '중', '참가·쇼업 수치·사진'),
     b('정산·리포트', '참가자 데이터 정리', '정산보고 제출', 1, '중', '하', '개인정보 처리 기준'),
-    b('정산·리포트', '만족도 조사', '정산보고 제출', 1, '하', '하', '문항·발송 시점')
+    b('정산·리포트', '만족도 조사', '정산보고 제출', 1, '하', '하', '문항·발송 시점'),
+    /* 6턴 D22 — 팀이 설정 탭에 추가한 역할 2종. 실제 프로젝트에서 쓰이고 있어 기본 카탈로그에 넣는다 */
+    b('운영총괄', '착수 브리핑', '발주처 기초자료 수령', 0.5, '상', '중', '팀에 공유할 목표·제약·예산 범위'),
+    b('운영총괄', '발주처 의사결정 관리', '운영계획서 확정', 1, '상', '상', '결정권자가 누구이고 승인 절차가 어떻게 되는가'),
+    b('운영총괄', '리스크·이슈 판단', '행사 7일 전 점검', 1, '상', '상', '지금 가장 큰 불확실성과 대비책'),
+    b('운영총괄', '행사 당일 총괄 판단', '행사 당일', 1, '상', '상', '현장에서 즉시 결정해야 할 항목'),
+    b('운영총괄', '집행 승인', '정산보고 제출', 1, '상', '중', '직접비 집행 한도와 승인 기준'),
+    b('운영총괄', '사후 리뷰', '정산 승인', 0.5, '중', '하', '다음 행사에 남길 개선점'),
+    b('운영 Sub', '운영 문서 작성 지원', '운영계획서 확정', 1, '중', '중', '어느 문서를 누가 쓰고 언제 합치는가'),
+    b('운영 Sub', '협력사 커뮤니케이션', '발주처 기초자료 수령', 1, '중', '중', '협력사별 창구와 회신 기한'),
+    b('운영 Sub', '제작물·물품 발주 관리', '행사 7일 전 점검', 1, '중', '중', '발주 마감일과 입고 확인 방법'),
+    b('운영 Sub', '현장 준비 지원', '행사 당일', 1, '중', '하', '반입·설치 순서와 담당'),
+    b('운영 Sub', '정산 자료 취합', '정산보고 제출', 1, '중', '하', '증빙 수집 대상과 기한')
+  ];
+
+  /* ------------------------------------------------------------------ *
+   * 6턴 D22 — 카탈로그가 비어 있는 파트에 붙이는 공통 블럭.
+   * 팀이 설정 탭에 새 역할을 추가해도 "고를 블럭이 하나도 없는" 상태가 생기지 않게 한다.
+   * ------------------------------------------------------------------ */
+  var GENERIC_BLOCKS = [
+    b('', '업무 범위 정리', '발주처 기초자료 수령', 0.5, '중', '하', '이 파트가 맡을 범위와 내놓을 결과물'),
+    b('', '담당자 배정·일정 합의', '운영계획서 확정', 0.5, '중', '하', '누가 언제까지 맡는가'),
+    b('', '진행 상황 점검', '행사 7일 전 점검', 0.5, '중', '하', '남은 일과 막힌 일'),
+    b('', '행사 당일 대응', '행사 당일', 1, '중', '중', '당일 이 파트가 볼 자리와 연락 방법'),
+    b('', '결과 정리·인수인계', '정산보고 제출', 0.5, '중', '하', '다음 사람이 이어받을 때 필요한 것')
   ];
 
   /* ------------------------------------------------------------------ *
@@ -1663,6 +1690,8 @@ const SAMPLE_DATA = {
     for (var i = 0; i < fs.length; i++) { if (fs[i].key === key) { return fs[i]; } }
     return null;
   }
+
+  function lower(v) { return str(v).toLowerCase(); }
 
   function str(v) {
     if (v === null || v === undefined) { return ''; }
@@ -1868,6 +1897,10 @@ const SAMPLE_DATA = {
         errors.push({ field: 'end', label: '배정 종료', message: '배정 종료는 시작보다 앞설 수 없습니다.' });
       }
     }
+    /* 6턴 D17 — 이메일은 선택 입력이지만 넣었다면 형식은 지킨다 */
+    if (name === 'members' && str(values.email) !== '' && !EMAIL_RE.test(str(values.email))) {
+      errors.push({ field: 'email', label: '이메일', message: '이메일 형식이 아닙니다: "' + str(values.email) + '" (예: hong@company.com)' });
+    }
     /* milestones: 완료일이 예정일보다 앞서는 것은 허용(추가 규칙 없음) */
 
     /* 5턴: 세부 항목·주석 — 마일스톤은 그 프로젝트에 있어야 하고, 주석의 세부ID 는 실제 항목이어야 한다 */
@@ -1896,6 +1929,13 @@ const SAMPLE_DATA = {
       list = dataList(c, 'members').filter(function (m) { return str(m.name) === str(values.name); });
       if (c.mode === 'edit' && c.expected) { list = list.filter(function (m) { return !sameKey('members', m, c.expected); }); }
       if (list.length) { return { field: 'name', label: '이름', message: '같은 이름의 팀원이 이미 있습니다: ' + values.name }; }
+      /* 6턴 D17 — 이메일은 팀원 사이에서 유일해야 자동 매칭이 흔들리지 않는다 */
+      var mail = lower(values.email);
+      if (mail !== '') {
+        var mlist = dataList(c, 'members').filter(function (m) { return lower(m.email) === mail; });
+        if (c.mode === 'edit' && c.expected) { mlist = mlist.filter(function (m) { return !sameKey('members', m, c.expected); }); }
+        if (mlist.length) { return { field: 'email', label: '이메일', message: '같은 이메일이 이미 있습니다: ' + str(mlist[0].name) }; }
+      }
     }
     if (name === 'milestones') {
       list = dataList(c, 'milestones').filter(function (m) { return sameKey('milestones', m, values); });
@@ -2258,10 +2298,246 @@ const SAMPLE_DATA = {
     return { total: picked.length, open: open };
   }
 
+  /* ------------------------------------------------------------------ *
+   * 6턴 — 본인 매칭 · 저장 가드 · 되돌리기 · 일괄 처리 · 카탈로그 파생 · 주간 행
+   * (전부 순수 함수. 서버·화면·mock·테스트가 같은 판정을 쓴다)
+   * ------------------------------------------------------------------ */
+
+  /** D17 — 로그인 이메일로 팀원 이름 찾기. 못 찾으면 '' (화면이 이름 선택으로 넘어간다) */
+  function matchMember(email, members) {
+    var mail = lower(email);
+    if (mail === '') { return ''; }
+    var list = Array.isArray(members) ? members : [];
+    for (var i = 0; i < list.length; i++) {
+      if (lower(list[i].email) === mail && str(list[i].status) !== '퇴사') { return str(list[i].name); }
+    }
+    return '';
+  }
+
+  /**
+   * D20 — 배정 묶음 저장으로 무엇이 사라지는지 미리 센다.
+   * before·after = 그 프로젝트의 배정 행 배열 → { removed, removedRows, added, changed, warn }
+   */
+  function assignmentSaveGuard(before, after) {
+    var b0 = Array.isArray(before) ? before : [];
+    var a0 = Array.isArray(after) ? after : [];
+    var afterIds = {};
+    a0.forEach(function (r) { var id = str(r && r.id); if (id !== '') { afterIds[id] = r; } });
+    var removedRows = b0.filter(function (r) { var id = str(r && r.id); return id !== '' && !afterIds[id]; });
+    var added = a0.filter(function (r) { return str(r && r.id) === ''; }).length;
+    var changed = 0;
+    b0.forEach(function (r) {
+      var id = str(r && r.id);
+      var m = id !== '' && afterIds[id];
+      if (m && diff('assignments', r, m).length) { changed++; }
+    });
+    return {
+      removed: removedRows.length,
+      removedRows: removedRows,
+      added: added,
+      changed: changed,
+      warn: removedRows.length > 0
+    };
+  }
+
+  /** 되돌리기가 손댈 수 있는 탭(시트 이름 → 표 이름) */
+  var RESTORE_TABLES = {
+    '프로젝트': 'projects', '배정': 'assignments', '공수기록': 'effortLogs', '팀원': 'members',
+    '마일스톤': 'milestones', '정산': 'settlements', '세부항목': 'items', '주석': 'notes'
+  };
+
+  function parseBackup(raw) {
+    if (raw === null || raw === undefined) { return { ok: true, rows: [] }; }
+    if (Array.isArray(raw)) { return { ok: true, rows: raw }; }
+    if (typeof raw === 'object') { return { ok: true, rows: [raw] }; }
+    var s = str(raw);
+    if (s === '') { return { ok: true, rows: [] }; }
+    try {
+      var v = JSON.parse(s);
+      if (Array.isArray(v)) { return { ok: true, rows: v }; }
+      if (v && typeof v === 'object') { return { ok: true, rows: [v] }; }
+      return { ok: false, rows: [] };
+    } catch (e) { return { ok: false, rows: [] }; }
+  }
+
+  /**
+   * D19 — 변경이력 한 줄을 되돌릴 수 있는지 판정한다.
+   * entry = { sheet, key, action, backup }  ·  data = 현재 데이터 묶음
+   * → { ok, reason, table, rows, mode }
+   *   mode 'replace' = 그 키의 행 묶음을 백업으로 교체(배정 저장)
+   *        'row'     = 단일 행 되돌리기(수정·삭제)
+   *        'delete'  = 추가의 되돌리기(그 행을 지운다)
+   */
+  function restoreCheck(entry, data) {
+    var e = entry || {};
+    var sheet = str(e.sheet), action = str(e.action), key = str(e.key);
+    var name = RESTORE_TABLES[sheet];
+    var no = function (reason) { return { ok: false, reason: reason, table: name || '', rows: [], mode: '' }; };
+    if (!name) { return no(sheet === HISTORY.sheet ? '변경이력 자체는 되돌릴 수 없습니다.' : '"' + (sheet || '(빈 탭)') + '" 탭은 되돌리기를 지원하지 않습니다. 시트에서 직접 고치세요.'); }
+    if (action === '되돌림') { /* 되돌리기의 되돌리기는 허용 */ }
+    var parsed = parseBackup(e.backup);
+    if (!parsed.ok) { return no('백업 내용을 읽을 수 없어 되돌릴 수 없습니다. 시트에서 직접 고치세요.'); }
+    var rows = parsed.rows;
+
+    if (name === 'projects' && action === '삭제') {
+      return no('프로젝트 삭제는 배정·마일스톤·정산이 함께 지워져 되돌릴 수 없습니다. 새 프로젝트로 다시 등록하세요.');
+    }
+    if (rows.length === 0) {
+      if (action === '추가') { return { ok: true, reason: '', table: name, rows: [], mode: 'delete' }; }
+      return no('되돌릴 이전 내용이 없습니다.');
+    }
+    if (action === '저장') { return { ok: true, reason: '', table: name, rows: rows, mode: 'replace' }; }
+    if (action === '추가') { return { ok: true, reason: '', table: name, rows: rows, mode: 'delete' }; }
+    /* 수정·삭제·되돌림 — 단일 행이면 row, 여러 행이면 묶음 교체 */
+    return { ok: true, reason: '', table: name, rows: rows, mode: rows.length > 1 ? 'replace' : 'row' };
+  }
+
+  /** 되돌리기 한 줄 요약(버튼 옆 안내) */
+  function restoreLabel(entry) {
+    var e = entry || {};
+    var c = restoreCheck(e, null);
+    if (!c.ok) { return c.reason; }
+    if (c.mode === 'delete') { return '이 추가를 취소하고 행을 지웁니다.'; }
+    if (c.mode === 'replace') { return str(e.sheet) + ' ' + str(e.key) + ' 을(를) 저장 전 ' + c.rows.length + '행으로 되돌립니다.'; }
+    return str(e.sheet) + ' ' + str(e.key) + ' 을(를) 이전 내용으로 되돌립니다.';
+  }
+
+  /**
+   * D21 — 마일스톤 일괄 처리 검증.
+   * action 'complete' → payload { done }  ·  'shift' → payload { days } 또는 { due }
+   * rows = 대상 마일스톤 행(현재 값) → { ok, errors, warnings, values:[바뀐 행] }
+   */
+  function validateBulkMilestone(action, rows, payload, ctx) {
+    var c = ctx || {};
+    var p = payload || {};
+    var errors = [];
+    var warnings = [];
+    var list = Array.isArray(rows) ? rows : [];
+    var act = str(action);
+    if (act !== 'complete' && act !== 'shift') {
+      errors.push({ field: 'action', label: '동작', message: '완료 처리 또는 예정일 조정만 할 수 있습니다.' });
+    }
+    if (list.length === 0) {
+      errors.push({ field: 'rows', label: '대상', message: '처리할 마일스톤을 하나 이상 고르세요.' });
+    }
+    var done = str(p.done);
+    var due = str(p.due);
+    var days = (p.days === null || p.days === undefined || p.days === '') ? null : Number(p.days);
+    if (act === 'complete') {
+      if (done !== '' && !isDateStr(done)) { errors.push({ field: 'done', label: '완료일', message: '완료일은 YYYY-MM-DD 형식의 날짜여야 합니다.' }); }
+      if (done === '') { errors.push({ field: 'done', label: '완료일', message: '완료일을 고르세요.' }); }
+    }
+    if (act === 'shift') {
+      var hasDue = due !== '';
+      var hasDays = days !== null && isFinite(days) && Math.round(days) === days;
+      if (hasDue && !isDateStr(due)) { errors.push({ field: 'due', label: '예정일', message: '예정일은 YYYY-MM-DD 형식의 날짜여야 합니다.' }); }
+      if (!hasDue && !hasDays) { errors.push({ field: 'days', label: '조정', message: '며칠 미룰지(정수) 또는 새 예정일을 넣으세요.' }); }
+      if (!hasDue && hasDays && days === 0) { errors.push({ field: 'days', label: '조정', message: '0일은 바뀌는 것이 없습니다.' }); }
+    }
+
+    var values = list.map(function (r) {
+      var row = normalizeRow('milestones', r, c);
+      if (act === 'complete') {
+        row.done = done;
+        if (isDateStr(row.due) && isDateStr(done) && addDaysStr(done, 365) < row.due) {
+          warnings.push(str(row.name) + ': 완료일이 예정일보다 1년 이상 빠릅니다. 날짜를 확인하세요.');
+        }
+      } else if (act === 'shift') {
+        if (due !== '' && isDateStr(due)) { row.due = due; }
+        else if (days !== null && isFinite(days) && isDateStr(row.due)) { row.due = addDaysStr(row.due, Math.round(days)); }
+      }
+      return row;
+    });
+    return { ok: errors.length === 0, errors: errors, warnings: warnings, values: values };
+  }
+
+  /**
+   * D22 — 카탈로그에 없는 파트를 공통 블럭으로 채운다.
+   * → { list, derivedParts } · list 는 원본 순서 유지 + 파생분을 뒤에 붙인다
+   */
+  function blocksWithFallback(blocks, settings) {
+    var src = (Array.isArray(blocks) ? blocks : []).filter(function (x) { return str(x && x.part) !== '' && str(x && x.block) !== ''; });
+    var base = src.length ? src : DEFAULT_BLOCKS;
+    var have = {};
+    base.forEach(function (x) { have[str(x.part)] = true; });
+    var roles = (settings && Array.isArray(settings.roles)) ? settings.roles : [];
+    var out = base.slice();
+    var derivedParts = [];
+    roles.forEach(function (role) {
+      var part = str(role);
+      if (part === '' || have[part]) { return; }
+      derivedParts.push(part);
+      GENERIC_BLOCKS.forEach(function (g) {
+        out.push({
+          part: part, block: g.block, milestone: g.milestone, md: g.md,
+          impact: g.impact, difficulty: g.difficulty, judge: g.judge, skipForHost: g.skipForHost
+        });
+      });
+    });
+    return { list: out, derivedParts: derivedParts, usedDefault: src.length === 0 };
+  }
+
+  /**
+   * D18 — "내 주간 공수" 한 화면에 채울 행을 만든다.
+   * ① 그 주(월~일)와 겹치는 내 배정 프로젝트 ② 공통코드 3종 ③ 이미 기록된 행(값 채움)
+   * → [{ projectId, label, md, memo, source:'배정'|'공통'|'기록', logged:bool }]
+   */
+  function weekEffortRows(member, week, data) {
+    var d = data || {};
+    var m = str(member), w = str(week);
+    var rows = [];
+    var index = {};
+    var weekEnd = isDateStr(w) ? addDaysStr(w, 6) : '';
+
+    function push(code, label, source) {
+      var key = str(code);
+      if (key === '' || index[key]) { return; }
+      index[key] = { projectId: key, label: str(label) || key, md: null, memo: '', source: source, logged: false };
+      rows.push(index[key]);
+    }
+
+    var projects = Array.isArray(d.projects) ? d.projects : [];
+    function projectLabel(pid) {
+      for (var i = 0; i < projects.length; i++) { if (str(projects[i].id) === str(pid)) { return str(projects[i].name) || str(pid); } }
+      return str(pid);
+    }
+
+    (Array.isArray(d.assignments) ? d.assignments : []).forEach(function (a) {
+      if (str(a.member) !== m) { return; }
+      if (w !== '' && isDateStr(str(a.start)) && isDateStr(str(a.end))) {
+        if (str(a.end) < w || str(a.start) > weekEnd) { return; }     // 그 주와 안 겹치면 뺀다
+      }
+      push(a.projectId, projectLabel(a.projectId), '배정');
+    });
+
+    var codes = (d.settings && Array.isArray(d.settings.commonCodes)) ? d.settings.commonCodes : [];
+    codes.forEach(function (code) { push(code, code, '공통'); });
+
+    (Array.isArray(d.effortLogs) ? d.effortLogs : []).forEach(function (l) {
+      if (str(l.member) !== m || str(l.week) !== w) { return; }
+      var code = str(l.projectId);
+      if (!index[code]) { push(code, projectLabel(code), '기록'); }
+      index[code].md = (l.md === null || l.md === undefined || l.md === '') ? null : Number(l.md);
+      index[code].memo = str(l.memo);
+      index[code].logged = true;
+    });
+
+    return rows;
+  }
+
   return {
     TABLES: TABLES,
     AUTO_ASSIGN_NOTE: AUTO_ASSIGN_NOTE,
     DEFAULT_BLOCKS: DEFAULT_BLOCKS,
+    GENERIC_BLOCKS: GENERIC_BLOCKS,
+    RESTORE_TABLES: RESTORE_TABLES,
+    matchMember: matchMember,
+    assignmentSaveGuard: assignmentSaveGuard,
+    restoreCheck: restoreCheck,
+    restoreLabel: restoreLabel,
+    validateBulkMilestone: validateBulkMilestone,
+    blocksWithFallback: blocksWithFallback,
+    weekEffortRows: weekEffortRows,
     addDaysStr: addDaysStr,
     isKeyItem: isKeyItem,
     itemDate: itemDate,
