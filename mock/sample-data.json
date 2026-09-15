@@ -1,0 +1,2092 @@
+{
+  "meta": {
+    "generatedAt": "2026-09-10T09:00:00+09:00",
+    "mode": "mock",
+    "sheetUrl": "",
+    "today": "2026-09-10",
+    "user": "미리보기 사용자",
+    "blocksSource": "default"
+  },
+  "settings": {
+    "statuses": [
+      "견적",
+      "계약",
+      "준비",
+      "진행",
+      "완료",
+      "정산완료",
+      "드롭"
+    ],
+    "types": [
+      "① 리멤버 MICE 솔루션",
+      "② 일반 행사(게런티 없음)",
+      "③ DMS·주최형",
+      "④ 커스터마이즈"
+    ],
+    "roles": [
+      "영업",
+      "모객",
+      "운영 PM",
+      "현장 운영",
+      "디자인·제작",
+      "정산·리포트"
+    ],
+    "commonCodes": [
+      "G-내부",
+      "G-영업",
+      "G-휴가"
+    ],
+    "capacityMdPerMonth": 20,
+    "margin": {
+      "external": 0.25,
+      "markup": 0.1,
+      "target": 0.35
+    },
+    "thresholds": {
+      "utilWarn": 0.85,
+      "utilOver": 1,
+      "missingLogWeeks": 1
+    },
+    "timelineOffsets": {
+      "kickoffDays": -90,
+      "settlementDays": 30
+    },
+    "milestoneTemplate": [
+      {
+        "name": "계약 체결",
+        "offsetDays": -90,
+        "role": "영업",
+        "skipForHost": true
+      },
+      {
+        "name": "발주처 기초자료 수령",
+        "offsetDays": -50,
+        "role": "운영 PM",
+        "skipForHost": true
+      },
+      {
+        "name": "답사",
+        "offsetDays": -45,
+        "role": "운영 PM",
+        "skipForHost": false
+      },
+      {
+        "name": "랜딩페이지 컨펌",
+        "offsetDays": -35,
+        "role": "모객",
+        "skipForHost": false
+      },
+      {
+        "name": "운영계획서 확정",
+        "offsetDays": -14,
+        "role": "운영 PM",
+        "skipForHost": false
+      },
+      {
+        "name": "행사 7일 전 점검",
+        "offsetDays": -7,
+        "role": "운영 PM",
+        "skipForHost": false
+      },
+      {
+        "name": "행사 당일",
+        "offsetDays": 0,
+        "role": "현장 운영",
+        "skipForHost": false
+      },
+      {
+        "name": "정산보고 제출",
+        "offsetDays": 5,
+        "role": "정산·리포트",
+        "skipForHost": false
+      },
+      {
+        "name": "정산 승인",
+        "offsetDays": 30,
+        "role": "정산·리포트",
+        "skipForHost": false
+      }
+    ]
+  },
+  "members": [
+    {
+      "name": "팀원1",
+      "role": "운영 PM",
+      "capacityMd": 20,
+      "status": "재직",
+      "color": "#EB6F2A"
+    },
+    {
+      "name": "팀원2",
+      "role": "모객",
+      "capacityMd": 20,
+      "status": "재직",
+      "color": "#476580"
+    },
+    {
+      "name": "팀원3",
+      "role": "현장 운영",
+      "capacityMd": 20,
+      "status": "재직",
+      "color": "#4A463F"
+    },
+    {
+      "name": "팀원4",
+      "role": "디자인·제작",
+      "capacityMd": 20,
+      "status": "재직",
+      "color": "#8C867A"
+    },
+    {
+      "name": "팀원5",
+      "role": "정산·리포트",
+      "capacityMd": 20,
+      "status": "재직",
+      "color": "#B8431A"
+    }
+  ],
+  "projects": [
+    {
+      "id": "P-2026-001",
+      "name": "가상 테크 컨퍼런스 2026",
+      "client": "가상 에이 주식회사",
+      "type": "① 리멤버 MICE 솔루션",
+      "status": "완료",
+      "pm": "팀원1",
+      "eventStart": "2026-09-03",
+      "eventEnd": "2026-09-04",
+      "kickoff": "",
+      "settlementDue": "2026-10-05",
+      "venue": "가상 컨벤션센터 A홀",
+      "guarantee": 300,
+      "expectedAttendees": 350,
+      "contractAmount": 68000000,
+      "note": "행사 종료 · 정산 마감",
+      "createdAt": "2026-05-28"
+    },
+    {
+      "id": "P-2026-002",
+      "name": "가상 파트너 서밋",
+      "client": "가상 비 주식회사",
+      "type": "① 리멤버 MICE 솔루션",
+      "status": "진행",
+      "pm": "팀원1",
+      "eventStart": "2026-09-24",
+      "eventEnd": "2026-09-25",
+      "kickoff": "2026-06-22",
+      "settlementDue": "",
+      "venue": "가상 호텔 연회장",
+      "guarantee": 250,
+      "expectedAttendees": 280,
+      "contractAmount": 92000000,
+      "note": "행사 2주 전 · 랜딩페이지 컨펌 지연",
+      "createdAt": "2026-06-18"
+    },
+    {
+      "id": "P-2026-003",
+      "name": "가상 브랜드 런칭 쇼케이스",
+      "client": "가상 씨 코리아",
+      "type": "④ 커스터마이즈",
+      "status": "준비",
+      "pm": "팀원1",
+      "eventStart": "2026-11-12",
+      "eventEnd": "2026-11-13",
+      "kickoff": "2026-08-14",
+      "settlementDue": "2026-12-14",
+      "venue": "가상 복합문화공간",
+      "guarantee": 180,
+      "expectedAttendees": 220,
+      "contractAmount": 145000000,
+      "note": "무대·영상 제작 포함",
+      "createdAt": "2026-08-10"
+    },
+    {
+      "id": "P-2026-004",
+      "name": "가상 인재 채용 박람회",
+      "client": "리멤버(자체)",
+      "type": "③ DMS·주최형",
+      "status": "계약",
+      "pm": "팀원1",
+      "eventStart": "2026-12-03",
+      "eventEnd": "2026-12-04",
+      "kickoff": "",
+      "settlementDue": "",
+      "venue": "가상 전시장 2관",
+      "guarantee": null,
+      "expectedAttendees": 500,
+      "contractAmount": 52000000,
+      "note": "자체 주최 · 담당자 배정 필요",
+      "createdAt": "2026-09-07"
+    },
+    {
+      "id": "P-2027-001",
+      "name": "가상 신년 비즈니스 포럼",
+      "client": "가상 디 그룹",
+      "type": "② 일반 행사(게런티 없음)",
+      "status": "견적",
+      "pm": "팀원1",
+      "eventStart": "2027-02-05",
+      "eventEnd": "2027-02-05",
+      "kickoff": "",
+      "settlementDue": "2027-03-07",
+      "venue": "가상 비즈니스센터 홀",
+      "guarantee": null,
+      "expectedAttendees": 150,
+      "contractAmount": 21000000,
+      "note": "견적 검토 중 · 표준 마일스톤 생성 전",
+      "createdAt": "2026-09-01"
+    }
+  ],
+  "assignments": [
+    {
+      "id": "A-0001",
+      "projectId": "P-2026-001",
+      "member": "팀원1",
+      "role": "운영 PM",
+      "plannedMd": 12,
+      "start": "2026-06-15",
+      "end": "2026-09-10",
+      "status": "종료",
+      "note": "전체 총괄"
+    },
+    {
+      "id": "A-0002",
+      "projectId": "P-2026-001",
+      "member": "팀원2",
+      "role": "모객",
+      "plannedMd": 8,
+      "start": "2026-07-06",
+      "end": "2026-09-02",
+      "status": "종료",
+      "note": "사전 등록 운영"
+    },
+    {
+      "id": "A-0003",
+      "projectId": "P-2026-001",
+      "member": "팀원3",
+      "role": "현장 운영",
+      "plannedMd": 7,
+      "start": "2026-08-17",
+      "end": "2026-09-05",
+      "status": "종료",
+      "note": "현장 세팅·운영"
+    },
+    {
+      "id": "A-0004",
+      "projectId": "P-2026-001",
+      "member": "팀원5",
+      "role": "정산·리포트",
+      "plannedMd": 3,
+      "start": "2026-09-07",
+      "end": "2026-09-30",
+      "status": "종료",
+      "note": "정산·성과 보고"
+    },
+    {
+      "id": "A-0005",
+      "projectId": "P-2026-002",
+      "member": "팀원1",
+      "role": "운영 PM",
+      "plannedMd": 20,
+      "start": "2026-07-01",
+      "end": "2026-10-09",
+      "status": "진행",
+      "note": "전체 총괄"
+    },
+    {
+      "id": "A-0006",
+      "projectId": "P-2026-002",
+      "member": "팀원2",
+      "role": "모객",
+      "plannedMd": 9,
+      "start": "2026-08-03",
+      "end": "2026-09-23",
+      "status": "진행",
+      "note": "참가자 모집"
+    },
+    {
+      "id": "A-0007",
+      "projectId": "P-2026-002",
+      "member": "팀원3",
+      "role": "현장 운영",
+      "plannedMd": 8,
+      "start": "2026-09-15",
+      "end": "2026-10-20",
+      "status": "진행",
+      "note": "현장 준비·철수"
+    },
+    {
+      "id": "A-0008",
+      "projectId": "P-2026-002",
+      "member": "팀원4",
+      "role": "디자인·제작",
+      "plannedMd": 6,
+      "start": "2026-08-10",
+      "end": "2026-09-18",
+      "status": "종료",
+      "note": "그래픽·인쇄물"
+    },
+    {
+      "id": "A-0009",
+      "projectId": "P-2026-003",
+      "member": "팀원1",
+      "role": "운영 PM",
+      "plannedMd": 24,
+      "start": "2026-08-17",
+      "end": "2026-11-20",
+      "status": "진행",
+      "note": "전체 총괄"
+    },
+    {
+      "id": "A-0010",
+      "projectId": "P-2026-003",
+      "member": "팀원2",
+      "role": "모객",
+      "plannedMd": 14,
+      "start": "2026-11-01",
+      "end": "2026-11-30",
+      "status": "예정",
+      "note": "초청·등록 운영"
+    },
+    {
+      "id": "A-0011",
+      "projectId": "P-2026-003",
+      "member": "팀원3",
+      "role": "현장 운영",
+      "plannedMd": 6,
+      "start": "2026-11-02",
+      "end": "2026-11-16",
+      "status": "예정",
+      "note": "현장 세팅·운영"
+    },
+    {
+      "id": "A-0012",
+      "projectId": "P-2026-003",
+      "member": "팀원4",
+      "role": "디자인·제작",
+      "plannedMd": 9,
+      "start": "2026-10-12",
+      "end": "2026-11-13",
+      "status": "예정",
+      "note": "무대·영상 제작"
+    },
+    {
+      "id": "A-0013",
+      "projectId": "P-2026-004",
+      "member": "팀원1",
+      "role": "운영 PM",
+      "plannedMd": 14,
+      "start": "2026-09-14",
+      "end": "2026-12-11",
+      "status": "예정",
+      "note": "담당자 추가 배정 필요"
+    },
+    {
+      "id": "A-0014",
+      "projectId": "P-2027-001",
+      "member": "팀원1",
+      "role": "운영 PM",
+      "plannedMd": 4,
+      "start": "2026-11-16",
+      "end": "2027-02-06",
+      "status": "예정",
+      "note": "수주 예상 가배정"
+    },
+    {
+      "id": "A-0015",
+      "projectId": "P-2027-001",
+      "member": "팀원2",
+      "role": "모객",
+      "plannedMd": 8,
+      "start": "2026-11-01",
+      "end": "2026-11-30",
+      "status": "예정",
+      "note": "수주 예상 가배정"
+    }
+  ],
+  "effortLogs": [
+    {
+      "week": "2026-07-20",
+      "member": "팀원1",
+      "projectId": "P-2026-001",
+      "md": 1.5,
+      "memo": "운영계획 초안",
+      "loggedAt": "2026-07-27 09:12"
+    },
+    {
+      "week": "2026-07-20",
+      "member": "팀원1",
+      "projectId": "P-2026-002",
+      "md": 2,
+      "memo": "발주처 회의",
+      "loggedAt": "2026-07-27 09:12"
+    },
+    {
+      "week": "2026-07-20",
+      "member": "팀원1",
+      "projectId": "G-내부",
+      "md": 1,
+      "memo": "주간 회의",
+      "loggedAt": "2026-07-27 09:12"
+    },
+    {
+      "week": "2026-07-20",
+      "member": "팀원2",
+      "projectId": "P-2026-001",
+      "md": 2,
+      "memo": "사전 등록 페이지 준비",
+      "loggedAt": "2026-07-27 09:24"
+    },
+    {
+      "week": "2026-07-20",
+      "member": "팀원2",
+      "projectId": "G-내부",
+      "md": 0.5,
+      "memo": "주간 회의",
+      "loggedAt": "2026-07-27 09:24"
+    },
+    {
+      "week": "2026-07-20",
+      "member": "팀원2",
+      "projectId": "G-영업",
+      "md": 1,
+      "memo": "신규 제안 지원",
+      "loggedAt": "2026-07-27 09:24"
+    },
+    {
+      "week": "2026-07-20",
+      "member": "팀원3",
+      "projectId": "P-2026-001",
+      "md": 0.5,
+      "memo": "현장 배치 검토",
+      "loggedAt": "2026-07-27 09:36"
+    },
+    {
+      "week": "2026-07-20",
+      "member": "팀원3",
+      "projectId": "G-내부",
+      "md": 0.5,
+      "memo": "주간 회의",
+      "loggedAt": "2026-07-27 09:36"
+    },
+    {
+      "week": "2026-07-20",
+      "member": "팀원3",
+      "projectId": "G-영업",
+      "md": 1.5,
+      "memo": "제안 현장 확인",
+      "loggedAt": "2026-07-27 09:36"
+    },
+    {
+      "week": "2026-07-20",
+      "member": "팀원4",
+      "projectId": "P-2026-003",
+      "md": 1,
+      "memo": "디자인 콘셉트 초안",
+      "loggedAt": "2026-07-27 09:48"
+    },
+    {
+      "week": "2026-07-20",
+      "member": "팀원4",
+      "projectId": "G-내부",
+      "md": 0.5,
+      "memo": "주간 회의",
+      "loggedAt": "2026-07-27 09:48"
+    },
+    {
+      "week": "2026-07-20",
+      "member": "팀원4",
+      "projectId": "G-영업",
+      "md": 1.5,
+      "memo": "제안서 디자인",
+      "loggedAt": "2026-07-27 09:48"
+    },
+    {
+      "week": "2026-07-20",
+      "member": "팀원5",
+      "projectId": "P-2026-001",
+      "md": 0.5,
+      "memo": "정산 양식 준비",
+      "loggedAt": "2026-07-27 09:58"
+    },
+    {
+      "week": "2026-07-20",
+      "member": "팀원5",
+      "projectId": "G-내부",
+      "md": 1,
+      "memo": "주간 회의·내부 보고",
+      "loggedAt": "2026-07-27 09:58"
+    },
+    {
+      "week": "2026-07-20",
+      "member": "팀원5",
+      "projectId": "G-영업",
+      "md": 0.5,
+      "memo": "제안 금액 검토",
+      "loggedAt": "2026-07-27 09:58"
+    },
+    {
+      "week": "2026-07-27",
+      "member": "팀원1",
+      "projectId": "P-2026-001",
+      "md": 1.5,
+      "memo": "협력사 조율",
+      "loggedAt": "2026-08-03 09:12"
+    },
+    {
+      "week": "2026-07-27",
+      "member": "팀원1",
+      "projectId": "P-2026-002",
+      "md": 2,
+      "memo": "운영 범위 정리",
+      "loggedAt": "2026-08-03 09:12"
+    },
+    {
+      "week": "2026-07-27",
+      "member": "팀원1",
+      "projectId": "G-내부",
+      "md": 0.5,
+      "memo": "주간 회의",
+      "loggedAt": "2026-08-03 09:12"
+    },
+    {
+      "week": "2026-07-27",
+      "member": "팀원2",
+      "projectId": "P-2026-001",
+      "md": 2,
+      "memo": "사전 등록 안내",
+      "loggedAt": "2026-08-03 09:24"
+    },
+    {
+      "week": "2026-07-27",
+      "member": "팀원2",
+      "projectId": "G-내부",
+      "md": 0.5,
+      "memo": "주간 회의",
+      "loggedAt": "2026-08-03 09:24"
+    },
+    {
+      "week": "2026-07-27",
+      "member": "팀원2",
+      "projectId": "G-영업",
+      "md": 1,
+      "memo": "신규 제안 지원",
+      "loggedAt": "2026-08-03 09:24"
+    },
+    {
+      "week": "2026-07-27",
+      "member": "팀원3",
+      "projectId": "P-2026-001",
+      "md": 0.5,
+      "memo": "장비 목록 정리",
+      "loggedAt": "2026-08-03 09:36"
+    },
+    {
+      "week": "2026-07-27",
+      "member": "팀원3",
+      "projectId": "G-내부",
+      "md": 0.5,
+      "memo": "주간 회의",
+      "loggedAt": "2026-08-03 09:36"
+    },
+    {
+      "week": "2026-07-27",
+      "member": "팀원3",
+      "projectId": "G-영업",
+      "md": 1.5,
+      "memo": "제안 현장 확인",
+      "loggedAt": "2026-08-03 09:36"
+    },
+    {
+      "week": "2026-07-27",
+      "member": "팀원4",
+      "projectId": "P-2026-003",
+      "md": 1,
+      "memo": "키 비주얼 시안",
+      "loggedAt": "2026-08-03 09:48"
+    },
+    {
+      "week": "2026-07-27",
+      "member": "팀원4",
+      "projectId": "G-내부",
+      "md": 0.5,
+      "memo": "주간 회의",
+      "loggedAt": "2026-08-03 09:48"
+    },
+    {
+      "week": "2026-07-27",
+      "member": "팀원4",
+      "projectId": "G-영업",
+      "md": 1,
+      "memo": "제안서 디자인",
+      "loggedAt": "2026-08-03 09:48"
+    },
+    {
+      "week": "2026-07-27",
+      "member": "팀원5",
+      "projectId": "P-2026-001",
+      "md": 0.5,
+      "memo": "지출 내역 정리",
+      "loggedAt": "2026-08-03 09:58"
+    },
+    {
+      "week": "2026-07-27",
+      "member": "팀원5",
+      "projectId": "G-내부",
+      "md": 1,
+      "memo": "주간 회의·내부 보고",
+      "loggedAt": "2026-08-03 09:58"
+    },
+    {
+      "week": "2026-08-03",
+      "member": "팀원1",
+      "projectId": "P-2026-001",
+      "md": 1.5,
+      "memo": "운영계획서 작성",
+      "loggedAt": "2026-08-10 09:12"
+    },
+    {
+      "week": "2026-08-03",
+      "member": "팀원1",
+      "projectId": "P-2026-002",
+      "md": 2,
+      "memo": "기초자료 검토",
+      "loggedAt": "2026-08-10 09:12"
+    },
+    {
+      "week": "2026-08-03",
+      "member": "팀원1",
+      "projectId": "G-내부",
+      "md": 0.5,
+      "memo": "주간 회의",
+      "loggedAt": "2026-08-10 09:12"
+    },
+    {
+      "week": "2026-08-03",
+      "member": "팀원2",
+      "projectId": "P-2026-001",
+      "md": 1.5,
+      "memo": "등록 현황 점검",
+      "loggedAt": "2026-08-10 09:24"
+    },
+    {
+      "week": "2026-08-03",
+      "member": "팀원2",
+      "projectId": "P-2026-002",
+      "md": 1,
+      "memo": "모객 계획 수립",
+      "loggedAt": "2026-08-10 09:24"
+    },
+    {
+      "week": "2026-08-03",
+      "member": "팀원2",
+      "projectId": "G-내부",
+      "md": 0.5,
+      "memo": "주간 회의",
+      "loggedAt": "2026-08-10 09:24"
+    },
+    {
+      "week": "2026-08-03",
+      "member": "팀원3",
+      "projectId": "P-2026-001",
+      "md": 0.5,
+      "memo": "동선 설계",
+      "loggedAt": "2026-08-10 09:36"
+    },
+    {
+      "week": "2026-08-03",
+      "member": "팀원3",
+      "projectId": "G-내부",
+      "md": 0.5,
+      "memo": "주간 회의",
+      "loggedAt": "2026-08-10 09:36"
+    },
+    {
+      "week": "2026-08-03",
+      "member": "팀원3",
+      "projectId": "G-영업",
+      "md": 1,
+      "memo": "제안 현장 확인",
+      "loggedAt": "2026-08-10 09:36"
+    },
+    {
+      "week": "2026-08-03",
+      "member": "팀원4",
+      "projectId": "P-2026-003",
+      "md": 1.5,
+      "memo": "무대 시안",
+      "loggedAt": "2026-08-10 09:48"
+    },
+    {
+      "week": "2026-08-03",
+      "member": "팀원4",
+      "projectId": "G-내부",
+      "md": 0.5,
+      "memo": "주간 회의",
+      "loggedAt": "2026-08-10 09:48"
+    },
+    {
+      "week": "2026-08-03",
+      "member": "팀원4",
+      "projectId": "G-영업",
+      "md": 1,
+      "memo": "제안서 디자인",
+      "loggedAt": "2026-08-10 09:48"
+    },
+    {
+      "week": "2026-08-03",
+      "member": "팀원5",
+      "projectId": "P-2026-001",
+      "md": 0.5,
+      "memo": "정산 자료 정리",
+      "loggedAt": "2026-08-10 09:58"
+    },
+    {
+      "week": "2026-08-03",
+      "member": "팀원5",
+      "projectId": "G-내부",
+      "md": 1,
+      "memo": "주간 회의·내부 보고",
+      "loggedAt": "2026-08-10 09:58"
+    },
+    {
+      "week": "2026-08-03",
+      "member": "팀원5",
+      "projectId": "G-휴가",
+      "md": 1,
+      "memo": "연차",
+      "loggedAt": "2026-08-10 09:58"
+    },
+    {
+      "week": "2026-08-10",
+      "member": "팀원1",
+      "projectId": "P-2026-001",
+      "md": 1.5,
+      "memo": "협력사 조율",
+      "loggedAt": "2026-08-17 09:12"
+    },
+    {
+      "week": "2026-08-10",
+      "member": "팀원1",
+      "projectId": "P-2026-002",
+      "md": 2,
+      "memo": "답사 준비",
+      "loggedAt": "2026-08-17 09:12"
+    },
+    {
+      "week": "2026-08-10",
+      "member": "팀원1",
+      "projectId": "G-내부",
+      "md": 0.5,
+      "memo": "주간 회의",
+      "loggedAt": "2026-08-17 09:12"
+    },
+    {
+      "week": "2026-08-10",
+      "member": "팀원2",
+      "projectId": "P-2026-001",
+      "md": 1.5,
+      "memo": "등록 안내 발송",
+      "loggedAt": "2026-08-17 09:24"
+    },
+    {
+      "week": "2026-08-10",
+      "member": "팀원2",
+      "projectId": "P-2026-002",
+      "md": 1.5,
+      "memo": "랜딩페이지 초안",
+      "loggedAt": "2026-08-17 09:24"
+    },
+    {
+      "week": "2026-08-10",
+      "member": "팀원2",
+      "projectId": "G-내부",
+      "md": 0.5,
+      "memo": "주간 회의",
+      "loggedAt": "2026-08-17 09:24"
+    },
+    {
+      "week": "2026-08-10",
+      "member": "팀원3",
+      "projectId": "P-2026-001",
+      "md": 1,
+      "memo": "현장 준비",
+      "loggedAt": "2026-08-17 09:36"
+    },
+    {
+      "week": "2026-08-10",
+      "member": "팀원3",
+      "projectId": "P-2026-002",
+      "md": 0.5,
+      "memo": "답사 동행",
+      "loggedAt": "2026-08-17 09:36"
+    },
+    {
+      "week": "2026-08-10",
+      "member": "팀원3",
+      "projectId": "G-내부",
+      "md": 0.5,
+      "memo": "주간 회의",
+      "loggedAt": "2026-08-17 09:36"
+    },
+    {
+      "week": "2026-08-10",
+      "member": "팀원4",
+      "projectId": "P-2026-002",
+      "md": 1.5,
+      "memo": "행사 그래픽 작업",
+      "loggedAt": "2026-08-17 09:48"
+    },
+    {
+      "week": "2026-08-10",
+      "member": "팀원4",
+      "projectId": "P-2026-003",
+      "md": 1,
+      "memo": "제작 사양 정리",
+      "loggedAt": "2026-08-17 09:48"
+    },
+    {
+      "week": "2026-08-10",
+      "member": "팀원4",
+      "projectId": "G-내부",
+      "md": 0.5,
+      "memo": "주간 회의",
+      "loggedAt": "2026-08-17 09:48"
+    },
+    {
+      "week": "2026-08-10",
+      "member": "팀원5",
+      "projectId": "P-2026-001",
+      "md": 0.5,
+      "memo": "정산 자료 정리",
+      "loggedAt": "2026-08-17 09:58"
+    },
+    {
+      "week": "2026-08-10",
+      "member": "팀원5",
+      "projectId": "G-내부",
+      "md": 0.5,
+      "memo": "주간 회의",
+      "loggedAt": "2026-08-17 09:58"
+    },
+    {
+      "week": "2026-08-17",
+      "member": "팀원1",
+      "projectId": "P-2026-001",
+      "md": 1.5,
+      "memo": "운영계획서 확정",
+      "loggedAt": "2026-08-24 09:12"
+    },
+    {
+      "week": "2026-08-17",
+      "member": "팀원1",
+      "projectId": "P-2026-002",
+      "md": 1.5,
+      "memo": "운영 범위 조율",
+      "loggedAt": "2026-08-24 09:12"
+    },
+    {
+      "week": "2026-08-17",
+      "member": "팀원1",
+      "projectId": "P-2026-003",
+      "md": 1,
+      "memo": "착수 회의",
+      "loggedAt": "2026-08-24 09:12"
+    },
+    {
+      "week": "2026-08-17",
+      "member": "팀원1",
+      "projectId": "G-내부",
+      "md": 0.5,
+      "memo": "주간 회의",
+      "loggedAt": "2026-08-24 09:12"
+    },
+    {
+      "week": "2026-08-17",
+      "member": "팀원2",
+      "projectId": "P-2026-001",
+      "md": 1,
+      "memo": "등록 마감 관리",
+      "loggedAt": "2026-08-24 09:24"
+    },
+    {
+      "week": "2026-08-17",
+      "member": "팀원2",
+      "projectId": "P-2026-002",
+      "md": 1.5,
+      "memo": "랜딩페이지 수정",
+      "loggedAt": "2026-08-24 09:24"
+    },
+    {
+      "week": "2026-08-17",
+      "member": "팀원2",
+      "projectId": "G-내부",
+      "md": 0.5,
+      "memo": "주간 회의",
+      "loggedAt": "2026-08-24 09:24"
+    },
+    {
+      "week": "2026-08-17",
+      "member": "팀원2",
+      "projectId": "G-휴가",
+      "md": 1,
+      "memo": "연차",
+      "loggedAt": "2026-08-24 09:24"
+    },
+    {
+      "week": "2026-08-17",
+      "member": "팀원3",
+      "projectId": "P-2026-001",
+      "md": 1.5,
+      "memo": "현장 준비",
+      "loggedAt": "2026-08-24 09:36"
+    },
+    {
+      "week": "2026-08-17",
+      "member": "팀원3",
+      "projectId": "P-2026-002",
+      "md": 0.5,
+      "memo": "장비 확인",
+      "loggedAt": "2026-08-24 09:36"
+    },
+    {
+      "week": "2026-08-17",
+      "member": "팀원3",
+      "projectId": "G-내부",
+      "md": 0.5,
+      "memo": "주간 회의",
+      "loggedAt": "2026-08-24 09:36"
+    },
+    {
+      "week": "2026-08-17",
+      "member": "팀원4",
+      "projectId": "P-2026-002",
+      "md": 2,
+      "memo": "행사 그래픽 작업",
+      "loggedAt": "2026-08-24 09:48"
+    },
+    {
+      "week": "2026-08-17",
+      "member": "팀원4",
+      "projectId": "P-2026-003",
+      "md": 1,
+      "memo": "디자인 보완",
+      "loggedAt": "2026-08-24 09:48"
+    },
+    {
+      "week": "2026-08-17",
+      "member": "팀원4",
+      "projectId": "G-내부",
+      "md": 0.5,
+      "memo": "주간 회의",
+      "loggedAt": "2026-08-24 09:48"
+    },
+    {
+      "week": "2026-08-17",
+      "member": "팀원5",
+      "projectId": "P-2026-001",
+      "md": 0.5,
+      "memo": "지출 승인 처리",
+      "loggedAt": "2026-08-24 09:58"
+    },
+    {
+      "week": "2026-08-17",
+      "member": "팀원5",
+      "projectId": "G-내부",
+      "md": 1,
+      "memo": "주간 회의·내부 보고",
+      "loggedAt": "2026-08-24 09:58"
+    },
+    {
+      "week": "2026-08-24",
+      "member": "팀원1",
+      "projectId": "P-2026-001",
+      "md": 2,
+      "memo": "행사 준비 점검",
+      "loggedAt": "2026-08-31 09:12"
+    },
+    {
+      "week": "2026-08-24",
+      "member": "팀원1",
+      "projectId": "P-2026-002",
+      "md": 1,
+      "memo": "일정 조율",
+      "loggedAt": "2026-08-31 09:12"
+    },
+    {
+      "week": "2026-08-24",
+      "member": "팀원1",
+      "projectId": "P-2026-003",
+      "md": 1,
+      "memo": "일정 수립",
+      "loggedAt": "2026-08-31 09:12"
+    },
+    {
+      "week": "2026-08-24",
+      "member": "팀원1",
+      "projectId": "G-내부",
+      "md": 0.5,
+      "memo": "주간 회의",
+      "loggedAt": "2026-08-31 09:12"
+    },
+    {
+      "week": "2026-08-24",
+      "member": "팀원2",
+      "projectId": "P-2026-001",
+      "md": 0.5,
+      "memo": "참가자 안내",
+      "loggedAt": "2026-08-31 09:24"
+    },
+    {
+      "week": "2026-08-24",
+      "member": "팀원2",
+      "projectId": "P-2026-002",
+      "md": 2,
+      "memo": "모객 실행",
+      "loggedAt": "2026-08-31 09:24"
+    },
+    {
+      "week": "2026-08-24",
+      "member": "팀원2",
+      "projectId": "G-내부",
+      "md": 0.5,
+      "memo": "주간 회의",
+      "loggedAt": "2026-08-31 09:24"
+    },
+    {
+      "week": "2026-08-24",
+      "member": "팀원3",
+      "projectId": "P-2026-001",
+      "md": 2,
+      "memo": "현장 세팅 준비",
+      "loggedAt": "2026-08-31 09:36"
+    },
+    {
+      "week": "2026-08-24",
+      "member": "팀원3",
+      "projectId": "P-2026-002",
+      "md": 1,
+      "memo": "장비 발주",
+      "loggedAt": "2026-08-31 09:36"
+    },
+    {
+      "week": "2026-08-24",
+      "member": "팀원3",
+      "projectId": "G-내부",
+      "md": 0.5,
+      "memo": "주간 회의",
+      "loggedAt": "2026-08-31 09:36"
+    },
+    {
+      "week": "2026-08-24",
+      "member": "팀원4",
+      "projectId": "P-2026-002",
+      "md": 2,
+      "memo": "인쇄물 제작",
+      "loggedAt": "2026-08-31 09:48"
+    },
+    {
+      "week": "2026-08-24",
+      "member": "팀원4",
+      "projectId": "P-2026-003",
+      "md": 1,
+      "memo": "디자인 검토",
+      "loggedAt": "2026-08-31 09:48"
+    },
+    {
+      "week": "2026-08-24",
+      "member": "팀원4",
+      "projectId": "G-내부",
+      "md": 0.5,
+      "memo": "주간 회의",
+      "loggedAt": "2026-08-31 09:48"
+    },
+    {
+      "week": "2026-08-24",
+      "member": "팀원5",
+      "projectId": "P-2026-001",
+      "md": 0.5,
+      "memo": "정산 준비",
+      "loggedAt": "2026-08-31 09:58"
+    },
+    {
+      "week": "2026-08-24",
+      "member": "팀원5",
+      "projectId": "G-내부",
+      "md": 0.5,
+      "memo": "주간 회의",
+      "loggedAt": "2026-08-31 09:58"
+    },
+    {
+      "week": "2026-08-24",
+      "member": "팀원5",
+      "projectId": "G-영업",
+      "md": 0.5,
+      "memo": "제안 금액 검토",
+      "loggedAt": "2026-08-31 09:58"
+    },
+    {
+      "week": "2026-08-31",
+      "member": "팀원1",
+      "projectId": "P-2026-001",
+      "md": 1.5,
+      "memo": "행사 현장 총괄",
+      "loggedAt": "2026-09-07 09:12"
+    },
+    {
+      "week": "2026-08-31",
+      "member": "팀원1",
+      "projectId": "P-2026-002",
+      "md": 1.5,
+      "memo": "운영계획 작성",
+      "loggedAt": "2026-09-07 09:12"
+    },
+    {
+      "week": "2026-08-31",
+      "member": "팀원1",
+      "projectId": "P-2026-003",
+      "md": 1,
+      "memo": "협력사 조율",
+      "loggedAt": "2026-09-07 09:12"
+    },
+    {
+      "week": "2026-08-31",
+      "member": "팀원1",
+      "projectId": "G-내부",
+      "md": 0.5,
+      "memo": "주간 회의",
+      "loggedAt": "2026-09-07 09:12"
+    },
+    {
+      "week": "2026-08-31",
+      "member": "팀원2",
+      "projectId": "P-2026-001",
+      "md": 0.5,
+      "memo": "현장 등록 운영",
+      "loggedAt": "2026-09-07 09:24"
+    },
+    {
+      "week": "2026-08-31",
+      "member": "팀원2",
+      "projectId": "P-2026-002",
+      "md": 2.5,
+      "memo": "모객 실행",
+      "loggedAt": "2026-09-07 09:24"
+    },
+    {
+      "week": "2026-08-31",
+      "member": "팀원2",
+      "projectId": "G-내부",
+      "md": 0.5,
+      "memo": "주간 회의",
+      "loggedAt": "2026-09-07 09:24"
+    },
+    {
+      "week": "2026-08-31",
+      "member": "팀원3",
+      "projectId": "P-2026-001",
+      "md": 2,
+      "memo": "현장 운영",
+      "loggedAt": "2026-09-07 09:36"
+    },
+    {
+      "week": "2026-08-31",
+      "member": "팀원3",
+      "projectId": "P-2026-002",
+      "md": 1.5,
+      "memo": "장비 점검",
+      "loggedAt": "2026-09-07 09:36"
+    },
+    {
+      "week": "2026-08-31",
+      "member": "팀원3",
+      "projectId": "G-내부",
+      "md": 0.5,
+      "memo": "주간 회의",
+      "loggedAt": "2026-09-07 09:36"
+    },
+    {
+      "week": "2026-08-31",
+      "member": "팀원4",
+      "projectId": "P-2026-002",
+      "md": 1.5,
+      "memo": "인쇄물 마감",
+      "loggedAt": "2026-09-07 09:48"
+    },
+    {
+      "week": "2026-08-31",
+      "member": "팀원4",
+      "projectId": "P-2026-003",
+      "md": 1.5,
+      "memo": "제작 도면 작업",
+      "loggedAt": "2026-09-07 09:48"
+    },
+    {
+      "week": "2026-08-31",
+      "member": "팀원4",
+      "projectId": "G-내부",
+      "md": 0.5,
+      "memo": "주간 회의",
+      "loggedAt": "2026-09-07 09:48"
+    },
+    {
+      "week": "2026-09-07",
+      "member": "팀원1",
+      "projectId": "P-2026-002",
+      "md": 2.5,
+      "memo": "행사 준비 점검",
+      "loggedAt": "2026-09-10 09:12"
+    },
+    {
+      "week": "2026-09-07",
+      "member": "팀원1",
+      "projectId": "P-2026-003",
+      "md": 1,
+      "memo": "협력사 조율",
+      "loggedAt": "2026-09-10 09:12"
+    },
+    {
+      "week": "2026-09-07",
+      "member": "팀원1",
+      "projectId": "P-2026-004",
+      "md": 0.5,
+      "memo": "착수 준비",
+      "loggedAt": "2026-09-10 09:12"
+    },
+    {
+      "week": "2026-09-07",
+      "member": "팀원1",
+      "projectId": "G-내부",
+      "md": 0.5,
+      "memo": "주간 회의",
+      "loggedAt": "2026-09-10 09:12"
+    },
+    {
+      "week": "2026-09-07",
+      "member": "팀원2",
+      "projectId": "P-2026-002",
+      "md": 3,
+      "memo": "모객 마감",
+      "loggedAt": "2026-09-10 09:24"
+    },
+    {
+      "week": "2026-09-07",
+      "member": "팀원2",
+      "projectId": "P-2026-003",
+      "md": 0.5,
+      "memo": "모객 계획",
+      "loggedAt": "2026-09-10 09:24"
+    },
+    {
+      "week": "2026-09-07",
+      "member": "팀원2",
+      "projectId": "G-내부",
+      "md": 0.5,
+      "memo": "주간 회의",
+      "loggedAt": "2026-09-10 09:24"
+    },
+    {
+      "week": "2026-09-07",
+      "member": "팀원3",
+      "projectId": "P-2026-002",
+      "md": 2,
+      "memo": "현장 준비",
+      "loggedAt": "2026-09-10 09:36"
+    },
+    {
+      "week": "2026-09-07",
+      "member": "팀원3",
+      "projectId": "G-내부",
+      "md": 0.5,
+      "memo": "주간 회의",
+      "loggedAt": "2026-09-10 09:36"
+    },
+    {
+      "week": "2026-09-07",
+      "member": "팀원3",
+      "projectId": "G-휴가",
+      "md": 1,
+      "memo": "연차",
+      "loggedAt": "2026-09-10 09:36"
+    },
+    {
+      "week": "2026-09-07",
+      "member": "팀원4",
+      "projectId": "P-2026-002",
+      "md": 1,
+      "memo": "현장 안내물 마감",
+      "loggedAt": "2026-09-10 09:48"
+    },
+    {
+      "week": "2026-09-07",
+      "member": "팀원4",
+      "projectId": "P-2026-003",
+      "md": 2,
+      "memo": "무대 제작 도면",
+      "loggedAt": "2026-09-10 09:48"
+    },
+    {
+      "week": "2026-09-07",
+      "member": "팀원4",
+      "projectId": "G-내부",
+      "md": 0.5,
+      "memo": "주간 회의",
+      "loggedAt": "2026-09-10 09:48"
+    }
+  ],
+  "milestones": [
+    {
+      "projectId": "P-2026-001",
+      "name": "계약 체결",
+      "due": "2026-06-05",
+      "done": "2026-06-05",
+      "owner": ""
+    },
+    {
+      "projectId": "P-2026-001",
+      "name": "발주처 기초자료 수령",
+      "due": "2026-07-15",
+      "done": "2026-07-16",
+      "owner": "팀원1"
+    },
+    {
+      "projectId": "P-2026-001",
+      "name": "답사",
+      "due": "2026-07-20",
+      "done": "2026-07-20",
+      "owner": "팀원1"
+    },
+    {
+      "projectId": "P-2026-001",
+      "name": "랜딩페이지 컨펌",
+      "due": "2026-07-30",
+      "done": "2026-07-31",
+      "owner": "팀원2"
+    },
+    {
+      "projectId": "P-2026-001",
+      "name": "운영계획서 확정",
+      "due": "2026-08-20",
+      "done": "2026-08-21",
+      "owner": "팀원1"
+    },
+    {
+      "projectId": "P-2026-001",
+      "name": "행사 7일 전 점검",
+      "due": "2026-08-27",
+      "done": "2026-08-27",
+      "owner": "팀원1"
+    },
+    {
+      "projectId": "P-2026-001",
+      "name": "행사 당일",
+      "due": "2026-09-03",
+      "done": "2026-09-03",
+      "owner": "팀원3"
+    },
+    {
+      "projectId": "P-2026-001",
+      "name": "정산보고 제출",
+      "due": "2026-09-09",
+      "done": "2026-09-09",
+      "owner": "팀원5"
+    },
+    {
+      "projectId": "P-2026-001",
+      "name": "정산 승인",
+      "due": "2026-10-04",
+      "done": "",
+      "owner": "팀원5"
+    },
+    {
+      "projectId": "P-2026-002",
+      "name": "계약 체결",
+      "due": "2026-06-26",
+      "done": "2026-06-26",
+      "owner": ""
+    },
+    {
+      "projectId": "P-2026-002",
+      "name": "발주처 기초자료 수령",
+      "due": "2026-08-05",
+      "done": "2026-08-06",
+      "owner": "팀원1"
+    },
+    {
+      "projectId": "P-2026-002",
+      "name": "답사",
+      "due": "2026-08-10",
+      "done": "2026-08-11",
+      "owner": "팀원1"
+    },
+    {
+      "projectId": "P-2026-002",
+      "name": "랜딩페이지 컨펌",
+      "due": "2026-08-20",
+      "done": "",
+      "owner": "팀원2"
+    },
+    {
+      "projectId": "P-2026-002",
+      "name": "운영계획서 확정",
+      "due": "2026-09-10",
+      "done": "",
+      "owner": "팀원1"
+    },
+    {
+      "projectId": "P-2026-002",
+      "name": "행사 7일 전 점검",
+      "due": "2026-09-17",
+      "done": "",
+      "owner": "팀원1"
+    },
+    {
+      "projectId": "P-2026-002",
+      "name": "행사 당일",
+      "due": "2026-09-24",
+      "done": "",
+      "owner": "팀원3"
+    },
+    {
+      "projectId": "P-2026-002",
+      "name": "정산보고 제출",
+      "due": "2026-09-30",
+      "done": "",
+      "owner": ""
+    },
+    {
+      "projectId": "P-2026-002",
+      "name": "정산 승인",
+      "due": "2026-10-25",
+      "done": "",
+      "owner": ""
+    },
+    {
+      "projectId": "P-2026-003",
+      "name": "계약 체결",
+      "due": "2026-08-14",
+      "done": "2026-08-14",
+      "owner": ""
+    },
+    {
+      "projectId": "P-2026-003",
+      "name": "발주처 기초자료 수령",
+      "due": "2026-09-23",
+      "done": "",
+      "owner": "팀원1"
+    },
+    {
+      "projectId": "P-2026-003",
+      "name": "답사",
+      "due": "2026-09-28",
+      "done": "",
+      "owner": "팀원1"
+    },
+    {
+      "projectId": "P-2026-003",
+      "name": "랜딩페이지 컨펌",
+      "due": "2026-10-08",
+      "done": "",
+      "owner": "팀원2"
+    },
+    {
+      "projectId": "P-2026-003",
+      "name": "운영계획서 확정",
+      "due": "2026-10-29",
+      "done": "",
+      "owner": "팀원1"
+    },
+    {
+      "projectId": "P-2026-003",
+      "name": "행사 7일 전 점검",
+      "due": "2026-11-05",
+      "done": "",
+      "owner": "팀원1"
+    },
+    {
+      "projectId": "P-2026-003",
+      "name": "행사 당일",
+      "due": "2026-11-12",
+      "done": "",
+      "owner": "팀원3"
+    },
+    {
+      "projectId": "P-2026-003",
+      "name": "정산보고 제출",
+      "due": "2026-11-18",
+      "done": "",
+      "owner": ""
+    },
+    {
+      "projectId": "P-2026-003",
+      "name": "정산 승인",
+      "due": "2026-12-13",
+      "done": "",
+      "owner": ""
+    },
+    {
+      "projectId": "P-2026-004",
+      "name": "답사",
+      "due": "2026-10-19",
+      "done": "",
+      "owner": "팀원1"
+    },
+    {
+      "projectId": "P-2026-004",
+      "name": "랜딩페이지 컨펌",
+      "due": "2026-10-29",
+      "done": "",
+      "owner": ""
+    },
+    {
+      "projectId": "P-2026-004",
+      "name": "운영계획서 확정",
+      "due": "2026-11-19",
+      "done": "",
+      "owner": "팀원1"
+    },
+    {
+      "projectId": "P-2026-004",
+      "name": "행사 7일 전 점검",
+      "due": "2026-11-26",
+      "done": "",
+      "owner": "팀원1"
+    },
+    {
+      "projectId": "P-2026-004",
+      "name": "행사 당일",
+      "due": "2026-12-03",
+      "done": "",
+      "owner": ""
+    },
+    {
+      "projectId": "P-2026-004",
+      "name": "정산보고 제출",
+      "due": "2026-12-09",
+      "done": "",
+      "owner": ""
+    },
+    {
+      "projectId": "P-2026-004",
+      "name": "정산 승인",
+      "due": "2027-01-03",
+      "done": "",
+      "owner": ""
+    }
+  ],
+  "settlements": [
+    {
+      "projectId": "P-2026-001",
+      "revenue": 68000000,
+      "directCost": 47600000,
+      "preReg": 420,
+      "attended": 290,
+      "status": "완료"
+    },
+    {
+      "projectId": "P-2026-002",
+      "revenue": null,
+      "directCost": null,
+      "preReg": null,
+      "attended": null,
+      "status": "미착수"
+    },
+    {
+      "projectId": "P-2026-003",
+      "revenue": null,
+      "directCost": null,
+      "preReg": null,
+      "attended": null,
+      "status": "미착수"
+    },
+    {
+      "projectId": "P-2026-004",
+      "revenue": null,
+      "directCost": null,
+      "preReg": null,
+      "attended": null,
+      "status": "미착수"
+    },
+    {
+      "projectId": "P-2027-001",
+      "revenue": null,
+      "directCost": null,
+      "preReg": null,
+      "attended": null,
+      "status": "미착수"
+    }
+  ],
+  "history": [],
+  "blocks": [
+    {
+      "part": "영업",
+      "block": "견적·제안서 작성",
+      "milestone": "계약 체결",
+      "md": 3,
+      "impact": "상",
+      "difficulty": "중",
+      "judge": "범위·제외 항목·부가세 기준을 제안서에 명시했는가",
+      "skipForHost": true
+    },
+    {
+      "part": "영업",
+      "block": "계약 체결",
+      "milestone": "계약 체결",
+      "md": 1,
+      "impact": "상",
+      "difficulty": "하",
+      "judge": "계약금·잔금 조건, 인보이스 대체 여부",
+      "skipForHost": true
+    },
+    {
+      "part": "영업",
+      "block": "고객 요구사항 정리",
+      "milestone": "발주처 기초자료 수령",
+      "md": 1,
+      "impact": "중",
+      "difficulty": "하",
+      "judge": "타깃·게런티·모객 제외 조건",
+      "skipForHost": true
+    },
+    {
+      "part": "영업",
+      "block": "재계약·추가 제안 협의",
+      "milestone": "정산 승인",
+      "md": 1,
+      "impact": "중",
+      "difficulty": "중",
+      "judge": "다음 행사 시기·규모",
+      "skipForHost": true
+    },
+    {
+      "part": "모객",
+      "block": "타깃 명단 확보",
+      "milestone": "발주처 기초자료 수령",
+      "md": 2,
+      "impact": "상",
+      "difficulty": "중",
+      "judge": "타깃 조건(직무·지역·직급)과 사전 모수 자료",
+      "skipForHost": false
+    },
+    {
+      "part": "모객",
+      "block": "초청 메시지·랜딩페이지",
+      "milestone": "랜딩페이지 컨펌",
+      "md": 2,
+      "impact": "상",
+      "difficulty": "중",
+      "judge": "고객사 컨펌 마감일·톤앤매너",
+      "skipForHost": false
+    },
+    {
+      "part": "모객",
+      "block": "등록 관리·리마인드",
+      "milestone": "행사 7일 전 점검",
+      "md": 2,
+      "impact": "중",
+      "difficulty": "하",
+      "judge": "리마인드 횟수·채널",
+      "skipForHost": false
+    },
+    {
+      "part": "모객",
+      "block": "참석 확정 콜",
+      "milestone": "행사 7일 전 점검",
+      "md": 3,
+      "impact": "상",
+      "difficulty": "중",
+      "judge": "게런티 대비 확정 인원",
+      "skipForHost": false
+    },
+    {
+      "part": "모객",
+      "block": "현장 등록 데스크",
+      "milestone": "행사 당일",
+      "md": 1,
+      "impact": "중",
+      "difficulty": "하",
+      "judge": "명찰·체크인 방식",
+      "skipForHost": false
+    },
+    {
+      "part": "운영 PM",
+      "block": "고객사 커뮤니케이션",
+      "milestone": "운영계획서 확정",
+      "md": 3,
+      "impact": "상",
+      "difficulty": "중",
+      "judge": "주간 보고 주기·창구 1명",
+      "skipForHost": false
+    },
+    {
+      "part": "운영 PM",
+      "block": "아젠다·프로그램 설정",
+      "milestone": "운영계획서 확정",
+      "md": 2,
+      "impact": "상",
+      "difficulty": "상",
+      "judge": "세션 수·시간표·연사 확정 여부",
+      "skipForHost": false
+    },
+    {
+      "part": "운영 PM",
+      "block": "베뉴 서칭·계약",
+      "milestone": "답사",
+      "md": 2,
+      "impact": "상",
+      "difficulty": "중",
+      "judge": "수용 인원·전기·반입 시간·주차",
+      "skipForHost": false
+    },
+    {
+      "part": "운영 PM",
+      "block": "연사·패널 섭외",
+      "milestone": "운영계획서 확정",
+      "md": 2,
+      "impact": "상",
+      "difficulty": "상",
+      "judge": "섭외비·이동·자료 마감",
+      "skipForHost": false
+    },
+    {
+      "part": "운영 PM",
+      "block": "운영계획서 작성",
+      "milestone": "운영계획서 확정",
+      "md": 2,
+      "impact": "중",
+      "difficulty": "중",
+      "judge": "큐시트·역할표·비상 연락망",
+      "skipForHost": false
+    },
+    {
+      "part": "운영 PM",
+      "block": "협력사 발주·관리",
+      "milestone": "행사 7일 전 점검",
+      "md": 2,
+      "impact": "중",
+      "difficulty": "중",
+      "judge": "발주 범위·납기·현장 책임자",
+      "skipForHost": false
+    },
+    {
+      "part": "운영 PM",
+      "block": "예산·정산 관리",
+      "milestone": "정산보고 제출",
+      "md": 2,
+      "impact": "상",
+      "difficulty": "중",
+      "judge": "직접비 항목·증빙",
+      "skipForHost": false
+    },
+    {
+      "part": "운영 PM",
+      "block": "리허설·큐시트",
+      "milestone": "행사 7일 전 점검",
+      "md": 1,
+      "impact": "중",
+      "difficulty": "하",
+      "judge": "리허설 일시·참석자",
+      "skipForHost": false
+    },
+    {
+      "part": "현장 운영",
+      "block": "등록 파트",
+      "milestone": "행사 당일",
+      "md": 2,
+      "impact": "중",
+      "difficulty": "하",
+      "judge": "등록 인력 수·피크 시간",
+      "skipForHost": false
+    },
+    {
+      "part": "현장 운영",
+      "block": "연사 파트",
+      "milestone": "행사 당일",
+      "md": 1,
+      "impact": "상",
+      "difficulty": "중",
+      "judge": "연사 도착·대기실·발표 자료",
+      "skipForHost": false
+    },
+    {
+      "part": "현장 운영",
+      "block": "무대·기술 파트",
+      "milestone": "행사 당일",
+      "md": 2,
+      "impact": "상",
+      "difficulty": "상",
+      "judge": "음향·영상·조명 담당과 큐시트",
+      "skipForHost": false
+    },
+    {
+      "part": "현장 운영",
+      "block": "케이터링·동선",
+      "milestone": "행사 당일",
+      "md": 1,
+      "impact": "중",
+      "difficulty": "하",
+      "judge": "식음료 시간·동선·인원",
+      "skipForHost": false
+    },
+    {
+      "part": "현장 운영",
+      "block": "현장 스태프 관리",
+      "milestone": "행사 당일",
+      "md": 1,
+      "impact": "중",
+      "difficulty": "중",
+      "judge": "스태프 수·교육·복장",
+      "skipForHost": false
+    },
+    {
+      "part": "현장 운영",
+      "block": "철수·정리",
+      "milestone": "행사 당일",
+      "md": 0.5,
+      "impact": "하",
+      "difficulty": "하",
+      "judge": "반출 시간·파손 점검",
+      "skipForHost": false
+    },
+    {
+      "part": "디자인·제작",
+      "block": "행사 기획 디자인(콘셉트부터)",
+      "milestone": "랜딩페이지 컨펌",
+      "md": 3,
+      "impact": "상",
+      "difficulty": "상",
+      "judge": "콘셉트 시안 수·컨펌 단계",
+      "skipForHost": false
+    },
+    {
+      "part": "디자인·제작",
+      "block": "키비주얼",
+      "milestone": "랜딩페이지 컨펌",
+      "md": 2,
+      "impact": "상",
+      "difficulty": "중",
+      "judge": "고객사 브랜드 가이드",
+      "skipForHost": false
+    },
+    {
+      "part": "디자인·제작",
+      "block": "인쇄·제작물 발주",
+      "milestone": "행사 7일 전 점검",
+      "md": 1,
+      "impact": "중",
+      "difficulty": "하",
+      "judge": "수량·규격·납기",
+      "skipForHost": false
+    },
+    {
+      "part": "디자인·제작",
+      "block": "영상 제작",
+      "milestone": "행사 7일 전 점검",
+      "md": 3,
+      "impact": "상",
+      "difficulty": "상",
+      "judge": "분량·자막·납품 형식",
+      "skipForHost": false
+    },
+    {
+      "part": "디자인·제작",
+      "block": "현장 그래픽·사이니지",
+      "milestone": "행사 7일 전 점검",
+      "md": 1,
+      "impact": "중",
+      "difficulty": "하",
+      "judge": "설치 위치·사이즈",
+      "skipForHost": false
+    },
+    {
+      "part": "디자인·제작",
+      "block": "웹·랜딩 디자인",
+      "milestone": "랜딩페이지 컨펌",
+      "md": 1,
+      "impact": "중",
+      "difficulty": "중",
+      "judge": "등록 폼 항목",
+      "skipForHost": false
+    },
+    {
+      "part": "정산·리포트",
+      "block": "정산서 작성",
+      "milestone": "정산보고 제출",
+      "md": 1,
+      "impact": "상",
+      "difficulty": "중",
+      "judge": "매출·직접비 확정 여부",
+      "skipForHost": false
+    },
+    {
+      "part": "정산·리포트",
+      "block": "결과 보고서",
+      "milestone": "정산보고 제출",
+      "md": 1,
+      "impact": "중",
+      "difficulty": "중",
+      "judge": "참가·쇼업 수치·사진",
+      "skipForHost": false
+    },
+    {
+      "part": "정산·리포트",
+      "block": "참가자 데이터 정리",
+      "milestone": "정산보고 제출",
+      "md": 1,
+      "impact": "중",
+      "difficulty": "하",
+      "judge": "개인정보 처리 기준",
+      "skipForHost": false
+    },
+    {
+      "part": "정산·리포트",
+      "block": "만족도 조사",
+      "milestone": "정산보고 제출",
+      "md": 1,
+      "impact": "하",
+      "difficulty": "하",
+      "judge": "문항·발송 시점",
+      "skipForHost": false
+    }
+  ],
+  "items": [
+    {
+      "id": "W-000001",
+      "projectId": "P-2026-002",
+      "milestone": "답사",
+      "part": "운영 PM",
+      "block": "베뉴 서칭·계약",
+      "owner": "팀원1",
+      "impact": "상",
+      "difficulty": "중",
+      "plannedMd": 2,
+      "due": "",
+      "status": "완료",
+      "note": ""
+    },
+    {
+      "id": "W-000002",
+      "projectId": "P-2026-002",
+      "milestone": "운영계획서 확정",
+      "part": "운영 PM",
+      "block": "아젠다·프로그램 설정",
+      "owner": "팀원1",
+      "impact": "상",
+      "difficulty": "상",
+      "plannedMd": 2,
+      "due": "",
+      "status": "진행",
+      "note": ""
+    },
+    {
+      "id": "W-000003",
+      "projectId": "P-2026-002",
+      "milestone": "랜딩페이지 컨펌",
+      "part": "디자인·제작",
+      "block": "키비주얼",
+      "owner": "팀원4",
+      "impact": "상",
+      "difficulty": "중",
+      "plannedMd": 2,
+      "due": "",
+      "status": "진행",
+      "note": ""
+    },
+    {
+      "id": "W-000004",
+      "projectId": "P-2026-002",
+      "milestone": "행사 당일",
+      "part": "현장 운영",
+      "block": "등록 파트",
+      "owner": "",
+      "impact": "중",
+      "difficulty": "하",
+      "plannedMd": 2,
+      "due": "",
+      "status": "예정",
+      "note": ""
+    },
+    {
+      "id": "W-000005",
+      "projectId": "P-2026-003",
+      "milestone": "운영계획서 확정",
+      "part": "운영 PM",
+      "block": "연사·패널 섭외",
+      "owner": "",
+      "impact": "상",
+      "difficulty": "상",
+      "plannedMd": 2,
+      "due": "",
+      "status": "예정",
+      "note": ""
+    },
+    {
+      "id": "W-000006",
+      "projectId": "P-2026-002",
+      "milestone": "랜딩페이지 컨펌",
+      "part": "모객",
+      "block": "초청 메시지·랜딩페이지",
+      "owner": "팀원2",
+      "impact": "상",
+      "difficulty": "중",
+      "plannedMd": 2,
+      "due": "",
+      "status": "진행",
+      "note": ""
+    }
+  ],
+  "notes": [
+    {
+      "id": "N-000001",
+      "projectId": "P-2026-002",
+      "milestone": "답사",
+      "itemId": "W-000001",
+      "part": "운영 PM",
+      "author": "mock@example.com",
+      "authorName": "팀원1",
+      "at": "2026-09-01 10:00:00",
+      "type": "요청",
+      "content": "수용 인원·전기·반입 시간·주차",
+      "resolved": ""
+    },
+    {
+      "id": "N-000002",
+      "projectId": "P-2026-002",
+      "milestone": "답사",
+      "itemId": "W-000001",
+      "part": "운영 PM",
+      "author": "mock@example.com",
+      "authorName": "팀원1",
+      "at": "2026-09-03 15:30:00",
+      "type": "판단 근거",
+      "content": "후보 2곳 견적 비교 완료, 반입 시간 조건이 좋은 곳으로",
+      "resolved": "예"
+    },
+    {
+      "id": "N-000003",
+      "projectId": "P-2026-003",
+      "milestone": "운영계획서 확정",
+      "itemId": "W-000005",
+      "part": "운영 PM",
+      "author": "mock@example.com",
+      "authorName": "",
+      "at": "2026-09-08 09:10:00",
+      "type": "질문",
+      "content": "섭외비 예산 범위가 정해졌나요?",
+      "resolved": ""
+    },
+    {
+      "id": "N-000004",
+      "projectId": "P-2026-002",
+      "milestone": "랜딩페이지 컨펌",
+      "itemId": "",
+      "part": "디자인·제작",
+      "author": "mock@example.com",
+      "authorName": "팀원4",
+      "at": "2026-09-09 18:00:00",
+      "type": "결정",
+      "content": "키비주얼 B안으로 확정",
+      "resolved": "예"
+    }
+  ]
+}

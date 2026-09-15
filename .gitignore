@@ -1,0 +1,12 @@
+# 개인·로컬 설정 (세션별 권한 파일)
+.claude/settings.local.json
+
+# 폴더에 잠시 둔 외부 문서 (프로젝트 산출물 아님)
+/*.pdf
+
+# 런타임·OS 잡동사니
+node_modules/
+*.log
+.DS_Store
+Thumbs.db
+desktop.ini

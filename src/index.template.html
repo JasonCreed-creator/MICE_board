@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>마이스 비즈 팀 보드</title>
+<!--
+  index.template.html — 단일 파일 뼈대 (빌드 입력)
+  scripts/build.js 가 아래 자리표시자 5개를 채워 두 산출물을 만든다.
+    1) 스타일 자리(머리말의 style 태그)   ← src/styles.css
+    2) 샘플 데이터 자리(머리말의 주석 한 줄) ← mock/sample-data.json
+       미리보기 파일에만 채우고, 시트 연결본에서는 통째로 지운다.
+    3) 편집 계약 자리(본문 끝 첫 script 태그) ← src/schema.js  (먼저 로드)
+    4) 산식 자리(본문 끝 둘째 script 태그)   ← src/metrics.js
+    5) 화면 자리(본문 끝 셋째 script 태그)   ← src/app.js      (나중에 로드)
+  외부 주소·상대 경로·모듈 불러오기를 쓰지 않는다(오프라인·Apps Script 제약).
+  화면 내용은 전부 app.js 가 그려 넣는다. 여기에는 app.js 가 찾는 자리(뼈대)만 둔다.
+-->
+<style>/*__STYLES__*/</style>
+<!--__MOCK_DATA__-->
+</head>
+<body>
+
+<!-- 머리말 · 화면 선택 탭(버튼은 app.js 가 만든다) -->
+<header class="tb-header">
+  <div class="tb-header-row">
+    <div>
+      <div class="tb-kicker">마이스 비즈 팀</div>
+      <h1 class="tb-title">팀 프로젝트 보드</h1>
+    </div>
+    <div class="tb-meta">
+      <span id="meta-line">데이터를 불러오는 중입니다…</span>
+      <a id="sheet-link" class="tb-sheet-link" role="button" aria-disabled="true"
+         title="시트 주소가 아직 없습니다">시트 열기</a>
+    </div>
+  </div>
+  <nav id="tabs" class="tb-tabs" role="tablist" aria-label="화면 선택"></nav>
+</header>
+
+<!-- 불러오는 동안만 보이는 안내. app.js 가 준비를 마치면 감춘다 -->
+<div id="loading" class="tb-loading">화면을 준비하는 중입니다…</div>
+
+<!-- 본문. 데이터를 받은 뒤 app.js 가 hidden 을 푼다 -->
+<div id="app" hidden>
+  <section id="kpi-strip" class="tb-kpis" aria-label="핵심 지표"></section>
+  <section id="filters" class="tb-filters" aria-label="공통 필터"></section>
+  <main class="tb-main">
+    <section id="screen-A" class="tb-screen" role="tabpanel" aria-label="포트폴리오" hidden></section>
+    <section id="screen-B" class="tb-screen" role="tabpanel" aria-label="배정 보드" hidden></section>
+    <section id="screen-C" class="tb-screen" role="tabpanel" aria-label="공수 관리" hidden></section>
+    <section id="screen-D" class="tb-screen" role="tabpanel" aria-label="투입 대비 성과" hidden></section>
+    <section id="screen-E" class="tb-screen" role="tabpanel" aria-label="이번 주" hidden></section>
+  </main>
+</div>
+
+<!-- 저장 결과 알림 -->
+<div id="toasts" class="tb-toast-wrap" role="status" aria-live="polite"></div>
+
+<script>/*__SCHEMA__*/</script>
+<script>/*__METRICS__*/</script>
+<script>/*__APP__*/</script>
+</body>
+</html>

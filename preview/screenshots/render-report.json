@@ -1,0 +1,1193 @@
+{
+  "browser": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+  "startedAt": "2026-09-14T07:28:43.559Z",
+  "consoleErrors": [],
+  "mockWrites": [
+    "[mock write] getBootstrap",
+    "[mock write] createStandardMilestones Object",
+    "[mock write] createStandardMilestones Object",
+    "[mock write] completeMilestone Object",
+    "[mock write] saveAssignments Object",
+    "[mock write] saveRow Object",
+    "[mock write] saveRow Object",
+    "[mock write] saveRow Object",
+    "[mock write] saveRow Object",
+    "[mock write] deleteRow Object",
+    "[mock write] saveRow Object",
+    "[mock write] saveRow Object",
+    "[mock write] deleteRow Object",
+    "[mock write] saveEffortWeek Object",
+    "[mock write] deleteRow Object",
+    "[mock write] getBootstrap",
+    "[mock write] addItems Object",
+    "[mock write] addItems Object",
+    "[mock write] saveRow Object",
+    "[mock write] saveAssignments Object",
+    "[mock write] saveRow Object",
+    "[mock write] saveRow Object",
+    "[mock write] saveRow Object",
+    "[mock write] saveRow Object",
+    "[mock write] saveRow Object",
+    "[mock write] saveRow Object",
+    "[mock write] deleteRow Object",
+    "[mock write] getBootstrap"
+  ],
+  "tabs": {
+    "A": {
+      "visible": true,
+      "kpiCount": 4,
+      "timeline": true,
+      "cards": 5
+    },
+    "B": {
+      "visible": true,
+      "heatmap": true,
+      "cells": 30,
+      "overCells": [
+        "팀원2|2026-11"
+      ],
+      "saveButton": true,
+      "onlyAssignedToggle": true
+    },
+    "C": {
+      "visible": true,
+      "burn": true,
+      "stack": true,
+      "weekly": true
+    },
+    "D": {
+      "visible": true,
+      "scatter": true,
+      "scatterCircles": 1,
+      "scatterNote": "정산 전 프로젝트 4건(가상 파트너 서밋, 가상 브랜드 런칭 쇼케이스, 가상 인재 채용 박람회, 가상 신년 비즈니스 포럼)은 표시하지 않습니다.",
+      "inputOutput": true,
+      "series": [
+        "plannedRevenue",
+        "actualRevenue",
+        "actualMargin"
+      ],
+      "tableRows": 5,
+      "mutedRows": 4,
+      "headers": [
+        "프로젝트",
+        "상태",
+        "계약금액",
+        "정산 매출",
+        "실마진(직접비 차감)",
+        "실투입 공수",
+        "공수당 매출",
+        "쇼업률",
+        "게런티 달성률"
+      ],
+      "row004": [
+        "가상 인재 채용 박람회③ DMS·주최형",
+        "계약",
+        "5,200만 원",
+        "—",
+        "—",
+        "0.5",
+        "—",
+        "—",
+        "—"
+      ]
+    },
+    "E": {
+      "visible": true,
+      "upcoming": [
+        "운영계획서 확정 · 가상 파트너 서밋2026-09-10 · 팀원1보기완료 처리",
+        "행사 7일 전 점검 · 가상 파트너 서밋2026-09-17 · 팀원1보기완료 처리",
+        "발주처 기초자료 수령 · 가상 브랜드 런칭 쇼케이스2026-09-23 · 팀원1보기완료 처리",
+        "행사 당일 · 가상 파트너 서밋2026-09-24 · 팀원3보기완료 처리"
+      ],
+      "delayed": [
+        "랜딩페이지 컨펌 · 가상 파트너 서밋예정 2026-08-20 · 21일 지연 · 팀원2보기완료 처리"
+      ],
+      "missingLog": [
+        "팀원5기준 주차 2026-08-31 · 마지막 기록 2026-08-24기록 입력"
+      ],
+      "unassigned": [
+        "가상 인재 채용 박람회 · 계약배정 1행 · 담당 팀원1배정하기"
+      ],
+      "overload": [
+        "팀원2 · 2026년 11월계획 22.0 / 가용 20.0 · 110%히트맵 보기"
+      ],
+      "burnOver": [
+        "가상 테크 컨퍼런스 2026소진율 103% · 행사 종료 후투입 보기"
+      ],
+      "keyUnassigned": [
+        "연사·패널 섭외 · 가상 브랜드 런칭 쇼케이스운영계획서 확정 · 운영 PM · 임팩트 상 난이도 상 · 2.0 M/D · 2026-10-29담당 정하기"
+      ],
+      "openNotes": [
+        "질문 섭외비 예산 범위가 정해졌나요? · 가상 브랜드 런칭 쇼케이스운영계획서 확정 · 연사·패널 섭외 · 운영 PM · mock · 2026-09-08 09:10보기",
+        "요청 수용 인원·전기·반입 시간·주차 · 가상 파트너 서밋답사 · 베뉴 서칭·계약 · 운영 PM · 팀원1 · 2026-09-01 10:00보기"
+      ],
+      "completeButtons": 5
+    }
+  },
+  "numbers": {
+    "sep": {
+      "actualRevenue": 68000000,
+      "actualMargin": 20400000,
+      "plannedRevenue": 92000000
+    },
+    "feb": null,
+    "eventsThisMonth": "2건",
+    "teamUtil": "33%"
+  },
+  "filterGate": {
+    "applied": {
+      "badgeHidden": false,
+      "badgeText": "필터 적용 중 · 프로젝트 2 / 5",
+      "cellLevel": "over",
+      "cellText": "22.0 / 20.0110%",
+      "overload": [
+        "팀원2 · 2026년 11월계획 22.0 / 가용 20.0 · 110%히트맵 보기"
+      ],
+      "missing": [
+        "팀원5기준 주차 2026-08-31 · 마지막 기록 2026-08-24기록 입력"
+      ],
+      "teamUtil": "33%",
+      "cardsA": 2,
+      "rowsD": 2
+    },
+    "reset": {
+      "badgeHidden": true,
+      "cardsA": 5
+    }
+  },
+  "screenshots": [
+    {
+      "file": "preview\\screenshots\\A.png",
+      "width": 1920,
+      "height": 2187
+    },
+    {
+      "file": "preview\\screenshots\\B.png",
+      "width": 1920,
+      "height": 1958
+    },
+    {
+      "file": "preview\\screenshots\\C.png",
+      "width": 1920,
+      "height": 1652
+    },
+    {
+      "file": "preview\\screenshots\\D.png",
+      "width": 1920,
+      "height": 1851
+    },
+    {
+      "file": "preview\\screenshots\\E.png",
+      "width": 1920,
+      "height": 1279
+    },
+    {
+      "file": "preview\\screenshots\\A-1280.png",
+      "width": 1280,
+      "height": 2187
+    },
+    {
+      "file": "preview\\screenshots\\B-1280.png",
+      "width": 1280,
+      "height": 1977
+    },
+    {
+      "file": "preview\\screenshots\\C-1280.png",
+      "width": 1280,
+      "height": 1652
+    },
+    {
+      "file": "preview\\screenshots\\D-1280.png",
+      "width": 1280,
+      "height": 1851
+    },
+    {
+      "file": "preview\\screenshots\\E-1280.png",
+      "width": 1280,
+      "height": 1399
+    },
+    {
+      "file": "preview\\screenshots\\A-dark.png",
+      "width": 1920,
+      "height": 2187
+    },
+    {
+      "file": "preview\\screenshots\\B-dark.png",
+      "width": 1920,
+      "height": 1958
+    },
+    {
+      "file": "preview\\screenshots\\C-dark.png",
+      "width": 1920,
+      "height": 1652
+    },
+    {
+      "file": "preview\\screenshots\\D-dark.png",
+      "width": 1920,
+      "height": 1851
+    },
+    {
+      "file": "preview\\screenshots\\E-dark.png",
+      "width": 1920,
+      "height": 1279
+    },
+    {
+      "file": "preview\\screenshots\\form-project.png",
+      "width": 1920,
+      "height": 2888
+    },
+    {
+      "file": "preview\\screenshots\\effort-editor.png",
+      "width": 1920,
+      "height": 1749
+    },
+    {
+      "file": "preview\\screenshots\\block-picker.png",
+      "width": 1920,
+      "height": 2927
+    },
+    {
+      "file": "preview\\screenshots\\items-open.png",
+      "width": 1920,
+      "height": 2524
+    }
+  ],
+  "writePaths": {
+    "createStandardMilestones": {
+      "projectId": "P-2027-001",
+      "milestonesBefore": 34,
+      "buttonShown": true,
+      "afterFirstClick": {
+        "confirmShown": true,
+        "milestones": 34
+      },
+      "afterCancel": {
+        "confirmShown": false,
+        "buttonBack": true,
+        "milestones": 34
+      },
+      "afterConfirm": {
+        "milestones": 43,
+        "buttonHidden": true,
+        "completeNote": true
+      },
+      "rerun": {
+        "created": 0,
+        "skipped": 9
+      }
+    },
+    "completeMilestone": {
+      "target": {
+        "projectId": "P-2026-002",
+        "name": "랜딩페이지 컨펌",
+        "due": "2026-08-20",
+        "owner": "팀원2",
+        "daysLate": 21
+      },
+      "delayedBefore": 1,
+      "afterFirstClick": {
+        "confirmShown": true,
+        "delayed": 1
+      },
+      "afterCancel": {
+        "confirmShown": false,
+        "delayed": 1
+      },
+      "afterConfirm": {
+        "delayed": 0,
+        "done": "2026-09-10"
+      }
+    },
+    "saveAssignments": {
+      "projectId": "P-2026-004",
+      "rowsBefore": 1,
+      "chipShown": true,
+      "afterChip": {
+        "rows": 2,
+        "member": "팀원3",
+        "role": "현장 운영",
+        "start": "2026-09-04",
+        "end": "2026-12-04",
+        "chipOn": true
+      },
+      "assignmentsBefore": 15,
+      "assignmentsAfter": 16,
+      "ids": [
+        "A-0013",
+        "A-0016"
+      ],
+      "saved3": {
+        "id": "A-0016",
+        "projectId": "P-2026-004",
+        "member": "팀원3",
+        "role": "현장 운영",
+        "plannedMd": 4,
+        "start": "2026-09-04",
+        "end": "2026-12-04",
+        "status": "예정",
+        "note": ""
+      },
+      "unassignedBefore": 1,
+      "unassignedAfterDom": 0
+    },
+    "saveRowProjectNew": {
+      "before": {
+        "projects": 5,
+        "milestones": 43,
+        "settlements": 5,
+        "members": 5,
+        "effortLogs": 116,
+        "history": 4,
+        "items": 6,
+        "notes": 4,
+        "assignments": 16,
+        "formOpen": false
+      },
+      "expectedId": "P-2027-002",
+      "form": {
+        "shown": true,
+        "table": "projects",
+        "mode": "new",
+        "fields": 14,
+        "optionChecked": true,
+        "idHidden": true
+      },
+      "emptySave": {
+        "errorShown": true,
+        "items": 3,
+        "text": "저장하지 못했습니다행사명: 행사명 은(는) 필수입니다.행사 시작일: 행사 시작일 은(는) 필수입니다.행사 종료일: 행사 종료일 은(는) 필수입니다.",
+        "projects": 5
+      },
+      "after": {
+        "projects": 6,
+        "milestones": 52,
+        "settlements": 6,
+        "members": 5,
+        "effortLogs": 116,
+        "history": 5,
+        "items": 6,
+        "notes": 4,
+        "assignments": 16,
+        "formOpen": false
+      },
+      "saved": {
+        "id": "P-2027-002",
+        "status": "견적",
+        "type": "① 리멤버 MICE 솔루션",
+        "createdAt": "2026-09-10",
+        "settlement": true,
+        "milestones": 9,
+        "history0": {
+          "at": "2026-09-10 09:00:00",
+          "user": "미리보기 사용자",
+          "sheet": "프로젝트",
+          "key": "P-2027-002",
+          "action": "추가",
+          "summary": "행사명: 게이트 신규 프로젝트\n유형: ① 리멤버 MICE 솔루션\n상태: 견적\n행사 시작일: 2027-03-10\n행사 종료일: 2027-03-10\n계약금액(원): 0\n정산 행 자동 추가 · 표준 마일스톤 9건 생성"
+        },
+        "selected": "P-2027-002",
+        "card": true
+      }
+    },
+    "saveRowProjectEdit": {
+      "projectId": "P-2027-002",
+      "form": {
+        "shown": true,
+        "mode": "edit",
+        "idReadonly": "P-2027-002",
+        "name": "게이트 신규 프로젝트",
+        "deleteButton": true
+      },
+      "after": {
+        "contractAmount": 12345678,
+        "projects": 6,
+        "history0": {
+          "at": "2026-09-10 09:00:00",
+          "user": "미리보기 사용자",
+          "sheet": "프로젝트",
+          "key": "P-2027-002",
+          "action": "수정",
+          "summary": "계약금액(원): 0 → 12345678"
+        },
+        "cardAmount": "계약 1,235만 원",
+        "formOpen": false
+      }
+    },
+    "milestoneRow": {
+      "projectId": "P-2027-002",
+      "milestonesBefore": 52,
+      "form": {
+        "shown": true,
+        "projectId": "P-2027-002",
+        "disabled": true
+      },
+      "afterAdd": {
+        "milestones": 53,
+        "row": {
+          "projectId": "P-2027-002",
+          "name": "게이트 마일스톤",
+          "due": "2027-03-01",
+          "done": "",
+          "owner": ""
+        },
+        "listed": true
+      },
+      "afterEdit": {
+        "milestones": 53,
+        "due": "2027-03-02",
+        "history0": {
+          "at": "2026-09-10 09:00:00",
+          "user": "미리보기 사용자",
+          "sheet": "마일스톤",
+          "key": "P-2027-002 · 게이트 마일스톤",
+          "action": "수정",
+          "summary": "예정일: 2027-03-01 → 2027-03-02"
+        }
+      },
+      "afterFirstClick": {
+        "confirmShown": true,
+        "milestones": 53
+      },
+      "afterCancel": {
+        "confirmShown": false,
+        "buttonBack": true,
+        "milestones": 53
+      },
+      "afterConfirm": {
+        "milestones": 52,
+        "gone": true,
+        "history0": {
+          "at": "2026-09-10 09:00:00",
+          "user": "미리보기 사용자",
+          "sheet": "마일스톤",
+          "key": "P-2027-002 · 게이트 마일스톤",
+          "action": "삭제",
+          "summary": "마일스톤 행 삭제: P-2027-002 · 게이트 마일스톤"
+        }
+      }
+    },
+    "saveRowSettlement": {
+      "projectId": "P-2026-001",
+      "form": {
+        "shown": true,
+        "projectId": "P-2026-001",
+        "disabled": true,
+        "noDelete": true
+      },
+      "after": {
+        "settlements": 6,
+        "revenue": 50000000,
+        "directCost": 30000000,
+        "margin": 20000000,
+        "marginRate": 0.4,
+        "tds": [
+          "가상 테크 컨퍼런스 2026① 리멤버 MICE 솔루션",
+          "완료",
+          "6,800만 원",
+          "5,000만 원",
+          "2,000만 원 40.0%",
+          "31.0",
+          "161만 원",
+          "69.0%",
+          "96.7%"
+        ],
+        "formOpen": false
+      }
+    },
+    "memberRow": {
+      "membersBefore": 5,
+      "form": {
+        "shown": true,
+        "roleOptions": 6
+      },
+      "afterAdd": {
+        "members": 6,
+        "row": {
+          "name": "게이트 팀원",
+          "role": "현장 운영",
+          "capacityMd": 20,
+          "status": "재직",
+          "color": ""
+        },
+        "listed": true,
+        "deleteButton": true,
+        "pmOption": true
+      },
+      "blocked": {
+        "button": false,
+        "reason": "팀원1 을(를) 담당PM 5건 · 배정 5건 · 공수기록 28건 · 마일스톤 담당 19건 · 세부 항목 담당 2건 · 주석 작성자 이름 2건 이(가) 참조해 삭제할 수 없습니다. 상태를 \"퇴사\" 로 바꾸세요."
+      },
+      "blockedAttempt": {
+        "result": null,
+        "members": 6,
+        "member1": true
+      },
+      "afterFirstClick": {
+        "confirmShown": true,
+        "members": 6
+      },
+      "afterDelete": {
+        "members": 5,
+        "gone": true,
+        "history0": {
+          "at": "2026-09-10 09:00:00",
+          "user": "미리보기 사용자",
+          "sheet": "팀원",
+          "key": "게이트 팀원",
+          "action": "삭제",
+          "summary": "팀원 행 삭제: 게이트 팀원"
+        }
+      }
+    },
+    "saveEffortWeek": {
+      "member": "팀원5",
+      "week": "2026-08-31",
+      "projectId": "P-2026-001",
+      "effortLogsBefore": 116,
+      "editor": {
+        "card": true,
+        "memberSelect": true,
+        "weekOptions": [
+          "2026-09-07",
+          "2026-08-31",
+          "2026-08-24",
+          "2026-08-17",
+          "2026-08-10",
+          "2026-08-03",
+          "2026-07-27",
+          "2026-07-20"
+        ],
+        "weekLabels": [
+          "주차 선택",
+          "9/7 주차(이번 주)",
+          "8/31 주차(기준)",
+          "8/24 주차",
+          "8/17 주차",
+          "8/10 주차",
+          "8/3 주차",
+          "7/27 주차",
+          "7/20 주차"
+        ],
+        "cellHooks": 40
+      },
+      "loaded": {
+        "member": "팀원5",
+        "week": "2026-08-31",
+        "rows": 0,
+        "expected": 0,
+        "addButton": true
+      },
+      "rowState": {
+        "rows": 1,
+        "row": {
+          "projectId": "P-2026-001",
+          "md": "2",
+          "memo": ""
+        },
+        "total": "합계 2.0 공수 · 1행"
+      },
+      "after": {
+        "effortLogs": 117,
+        "log": {
+          "week": "2026-08-31",
+          "member": "팀원5",
+          "projectId": "P-2026-001",
+          "md": 2,
+          "memo": "",
+          "loggedAt": "2026-09-10 09:00"
+        },
+        "history0": {
+          "at": "2026-09-10 09:00:00",
+          "user": "미리보기 사용자",
+          "sheet": "공수기록",
+          "key": "2026-08-31 · 팀원5",
+          "action": "저장",
+          "summary": "실투입 M/D 합계: 2 (1행)\n프로젝트ID P-2026-001: 2"
+        },
+        "missingLog": []
+      }
+    },
+    "deleteRowProject": {
+      "projectId": "P-2027-002",
+      "before": {
+        "projects": 6,
+        "milestones": 52,
+        "settlements": 6,
+        "members": 5,
+        "effortLogs": 117,
+        "history": 13,
+        "items": 6,
+        "notes": 4,
+        "assignments": 16,
+        "formOpen": false
+      },
+      "buttonShown": true,
+      "afterFirstClick": {
+        "confirmShown": true,
+        "text": "정말 삭제할까요? 마일스톤 9 · 정산 1 도 함께 삭제됩니다. 확인취소",
+        "projects": 6
+      },
+      "after": {
+        "projects": 5,
+        "milestones": 43,
+        "settlements": 5,
+        "members": 5,
+        "effortLogs": 117,
+        "history": 14,
+        "items": 6,
+        "notes": 4,
+        "assignments": 16,
+        "formOpen": false
+      },
+      "detail": {
+        "gone": true,
+        "milestonesLeft": 0,
+        "settlementsLeft": 0,
+        "card": false,
+        "selected": "P-2026-001",
+        "history0": {
+          "at": "2026-09-10 09:00:00",
+          "user": "미리보기 사용자",
+          "sheet": "프로젝트",
+          "key": "P-2027-002",
+          "action": "삭제",
+          "summary": "프로젝트 행 삭제: P-2027-002\n함께 삭제: 마일스톤 9 · 정산 1"
+        }
+      }
+    },
+    "history": {
+      "length": 14,
+      "rows": 14,
+      "actions": [
+        "삭제",
+        "저장",
+        "삭제",
+        "추가",
+        "수정",
+        "삭제",
+        "수정",
+        "추가",
+        "수정",
+        "추가",
+        "저장",
+        "수정",
+        "추가",
+        "추가"
+      ],
+      "sheets": [
+        "프로젝트",
+        "공수기록",
+        "팀원",
+        "팀원",
+        "정산",
+        "마일스톤",
+        "마일스톤",
+        "마일스톤",
+        "프로젝트",
+        "프로젝트",
+        "배정",
+        "마일스톤",
+        "마일스톤",
+        "마일스톤"
+      ],
+      "users": [
+        "미리보기 사용자"
+      ],
+      "firstLines": [
+        "프로젝트 행 삭제: P-2027-002",
+        "실투입 M/D 합계: 2 (1행)",
+        "팀원 행 삭제: 게이트 팀원",
+        "이름: 게이트 팀원",
+        "매출(원): 68000000 → 50000000",
+        "마일스톤 행 삭제: P-2027-002 · 게이트 마일스톤"
+      ],
+      "allLabeled": true,
+      "emptyBox": false
+    },
+    "refreshData": {
+      "tabBefore": "E",
+      "after": {
+        "tab": "E",
+        "history": 14,
+        "projects": 5,
+        "effortLogs": 117
+      }
+    },
+    "addItems": {
+      "projectId": "P-2026-003",
+      "milestone": "답사",
+      "before": {
+        "projects": 5,
+        "milestones": 43,
+        "settlements": 5,
+        "members": 5,
+        "effortLogs": 117,
+        "history": 14,
+        "items": 6,
+        "notes": 4,
+        "assignments": 16,
+        "formOpen": false
+      },
+      "rollupBefore": {
+        "total": "2.0 M/D",
+        "mm": "0.10 M/M",
+        "chips": 7
+      },
+      "toggleText": "▸ 블럭 0",
+      "opened": {
+        "open": true,
+        "rows": 0,
+        "pickerButton": true,
+        "itemsOpen": true
+      },
+      "picker": {
+        "shown": true,
+        "part": "운영 PM",
+        "chips": [
+          "고객사 커뮤니케이션",
+          "아젠다·프로그램 설정",
+          "베뉴 서칭·계약",
+          "연사·패널 섭외",
+          "운영계획서 작성",
+          "협력사 발주·관리",
+          "예산·정산 관리",
+          "리허설·큐시트"
+        ],
+        "venueText": "☐ 베뉴 서칭·계약 기본 2.0 M/D · 임팩트 상 · 난이도 중",
+        "addDisabled": true
+      },
+      "checked": {
+        "checked": [
+          "베뉴 서칭·계약",
+          "협력사 발주·관리"
+        ],
+        "on": 2,
+        "count": "2",
+        "addDisabled": false,
+        "formOpen": false
+      },
+      "after": {
+        "projects": 5,
+        "milestones": 43,
+        "settlements": 5,
+        "members": 5,
+        "effortLogs": 117,
+        "history": 15,
+        "items": 8,
+        "notes": 6,
+        "assignments": 16,
+        "formOpen": false
+      },
+      "detail": {
+        "items": [
+          {
+            "id": "W-000007",
+            "part": "운영 PM",
+            "block": "베뉴 서칭·계약",
+            "owner": "",
+            "impact": "상",
+            "difficulty": "중",
+            "plannedMd": 2,
+            "due": "",
+            "status": "예정"
+          },
+          {
+            "id": "W-000008",
+            "part": "운영 PM",
+            "block": "협력사 발주·관리",
+            "owner": "",
+            "impact": "중",
+            "difficulty": "중",
+            "plannedMd": 2,
+            "due": "",
+            "status": "예정"
+          }
+        ],
+        "notes": [
+          [
+            {
+              "id": "N-000005",
+              "type": "요청",
+              "part": "운영 PM",
+              "author": "미리보기 사용자",
+              "at": "2026-09-10 09:00:00",
+              "content": "수용 인원·전기·반입 시간·주차",
+              "resolved": ""
+            }
+          ],
+          [
+            {
+              "id": "N-000006",
+              "type": "요청",
+              "part": "운영 PM",
+              "author": "미리보기 사용자",
+              "at": "2026-09-10 09:00:00",
+              "content": "발주 범위·납기·현장 책임자",
+              "resolved": ""
+            }
+          ]
+        ],
+        "pickerClosed": true,
+        "stillOpen": true,
+        "rows": 2,
+        "toggle": "▾ 블럭 2 · 미해결 2",
+        "badges": [
+          "주석 1 · 미해결 1",
+          "주석 1 · 미해결 1"
+        ],
+        "history0": {
+          "at": "2026-09-10 09:00:00",
+          "user": "미리보기 사용자",
+          "sheet": "세부항목",
+          "key": "P-2026-003 · 답사",
+          "action": "추가",
+          "summary": "블럭 추가: 2건 · 건너뜀 0건\n블럭: 운영 PM / 베뉴 서칭·계약 (2), 운영 PM / 협력사 발주·관리 (2)\n첫 주석 2건 생성"
+        },
+        "auto": [],
+        "rollup": {
+          "total": "6.0 M/D",
+          "mm": "0.30 M/M",
+          "chips": 7
+        }
+      },
+      "rerun": {
+        "created": 0,
+        "skipped": 2,
+        "items": 8
+      }
+    },
+    "itemOwnerAssign": {
+      "venueId": "W-000007",
+      "vendorId": "W-000008",
+      "utilBefore": 6.479468599033816,
+      "form": {
+        "shown": true,
+        "mode": "edit",
+        "pid": "P-2026-003",
+        "pidLocked": true,
+        "ms": "답사",
+        "msLocked": true,
+        "ownerOrder": [
+          "팀원1",
+          "팀원4",
+          "팀원2",
+          "팀원3",
+          "팀원5"
+        ],
+        "ownerLabels": [
+          "팀원1 · 운영 PM · 기배정 · 가동률 87%",
+          "팀원4 · 디자인·제작 · 기배정 · 가동률 14%",
+          "팀원2 · 모객 · 기배정 · 가동률 21%",
+          "팀원3 · 현장 운영 · 기배정 · 가동률 32%",
+          "팀원5 · 정산·리포트 · 가동률 15%"
+        ],
+        "noGrade": true
+      },
+      "afterA": {
+        "owner": "팀원3",
+        "auto": [
+          {
+            "id": "A-0017",
+            "member": "팀원3",
+            "role": "운영 PM",
+            "plannedMd": 2,
+            "start": "2026-09-14",
+            "end": "2026-09-28"
+          }
+        ],
+        "formOpen": false,
+        "stillOpen": true,
+        "overlaps": [],
+        "history": [
+          "배정 / 저장 / 세부항목 동기화: 1행",
+          "세부항목 / 수정 / 담당: (빈 값) → 팀원3"
+        ],
+        "utilAfter": 8.479468599033815,
+        "ownerCell": "팀원3"
+      },
+      "editor": {
+        "autoRows": 1,
+        "badge": "자동",
+        "disabledInputs": true,
+        "noRemove": true,
+        "note": "세부 항목에서 바꿉니다",
+        "editRows": 5,
+        "cellText": "8.5 / 20.042%",
+        "overlapBadges": 0
+      },
+      "resave": {
+        "assignmentsBefore": 17,
+        "assignmentsAfter": 17,
+        "auto": [
+          {
+            "id": "A-0017",
+            "member": "팀원3",
+            "role": "운영 PM",
+            "plannedMd": 2,
+            "start": "2026-09-14",
+            "end": "2026-09-28"
+          }
+        ]
+      },
+      "afterB": {
+        "auto": [
+          {
+            "id": "A-0017",
+            "member": "팀원3",
+            "role": "운영 PM",
+            "plannedMd": 4,
+            "start": "2026-09-14",
+            "end": "2026-09-28"
+          }
+        ],
+        "overlaps": [],
+        "utilAfter": 10.479468599033815,
+        "rollup": {
+          "total": "6.0 M/D",
+          "mm": "0.30 M/M",
+          "chips": 7
+        }
+      },
+      "afterC": {
+        "auto": [
+          {
+            "id": "A-0017",
+            "member": "팀원3",
+            "role": "운영 PM",
+            "plannedMd": 2,
+            "start": "2026-09-14",
+            "end": "2026-09-28"
+          }
+        ],
+        "overlaps": [
+          {
+            "member": "팀원1",
+            "role": "운영 PM",
+            "itemsMd": 2,
+            "manualMd": 24
+          }
+        ],
+        "utilAfter": 8.479468599033815
+      },
+      "overlapUi": {
+        "badges": 1,
+        "text": "세부 합계 2.0 M/D · 수동 24.0 M/D — 수동 행을 지우면 자동으로 바뀜",
+        "member": "팀원1",
+        "autoRows": 1,
+        "project": "P-2026-003"
+      }
+    },
+    "notes": {
+      "itemId": "W-000007",
+      "opened": {
+        "thread": true,
+        "notes": 1,
+        "resolved": 0,
+        "badge": "주석 1 · 미해결 1",
+        "contents": [
+          "수용 인원·전기·반입 시간·주차"
+        ],
+        "input": true,
+        "editButtons": 1
+      },
+      "afterAdd": {
+        "notes": 7,
+        "note": {
+          "id": "N-000007",
+          "type": "질문",
+          "author": "미리보기 사용자",
+          "authorName": "",
+          "at": "2026-09-10 09:00:00",
+          "itemId": "W-000007",
+          "part": "운영 PM",
+          "milestone": "답사",
+          "resolved": ""
+        },
+        "user": "미리보기 사용자",
+        "ui": {
+          "thread": true,
+          "notes": 2,
+          "resolved": 0,
+          "badge": "주석 2 · 미해결 2",
+          "contents": [
+            "수용 인원·전기·반입 시간·주차",
+            "게이트 질문"
+          ],
+          "input": true,
+          "editButtons": 2
+        },
+        "history0": {
+          "at": "2026-09-10 09:00:00",
+          "user": "미리보기 사용자",
+          "sheet": "주석",
+          "key": "N-000007 · W-000007",
+          "action": "추가",
+          "summary": "프로젝트ID: P-2026-003\n마일스톤: 답사\n세부ID: W-000007\n파트: 운영 PM\n유형: 질문\n내용: 게이트 질문"
+        }
+      },
+      "afterResolve": {
+        "resolved": "예",
+        "ui": {
+          "thread": true,
+          "notes": 2,
+          "resolved": 1,
+          "badge": "주석 2 · 미해결 1",
+          "contents": [
+            "수용 인원·전기·반입 시간·주차",
+            "게이트 질문"
+          ],
+          "input": true,
+          "editButtons": 2
+        },
+        "history0": {
+          "at": "2026-09-10 09:00:00",
+          "user": "미리보기 사용자",
+          "sheet": "주석",
+          "key": "N-000007 · W-000007",
+          "action": "수정",
+          "summary": "해결: (빈 값) → 예"
+        }
+      },
+      "authorRule": {
+        "otherEdit": null,
+        "otherAfter": "수용 인원·전기·반입 시간·주차",
+        "otherResolve": true,
+        "otherResolved": "예"
+      }
+    },
+    "deleteRowItem": {
+      "itemId": "W-000007",
+      "before": {
+        "projects": 5,
+        "milestones": 43,
+        "settlements": 5,
+        "members": 5,
+        "effortLogs": 117,
+        "history": 26,
+        "items": 8,
+        "notes": 7,
+        "assignments": 17,
+        "formOpen": false
+      },
+      "buttonShown": true,
+      "afterFirstClick": {
+        "confirmShown": true,
+        "text": "정말 삭제할까요? 주석 2 도 함께 삭제됩니다. 확인취소",
+        "items": 8
+      },
+      "afterCancel": {
+        "confirmShown": false,
+        "buttonBack": true,
+        "items": 8
+      },
+      "after": {
+        "projects": 5,
+        "milestones": 43,
+        "settlements": 5,
+        "members": 5,
+        "effortLogs": 117,
+        "history": 28,
+        "items": 7,
+        "notes": 5,
+        "assignments": 16,
+        "formOpen": false
+      },
+      "detail": {
+        "gone": true,
+        "notesLeft": 0,
+        "rowGone": true,
+        "stillOpen": true,
+        "rows": 1,
+        "auto": [],
+        "overlaps": [
+          {
+            "member": "팀원1",
+            "role": "운영 PM",
+            "itemsMd": 2,
+            "manualMd": 24
+          }
+        ],
+        "rollup": {
+          "total": "4.0 M/D",
+          "mm": "0.20 M/M",
+          "chips": 7
+        },
+        "history": [
+          "배정 / 저장 / 세부항목 동기화: 0행",
+          "세부항목 / 삭제 / 세부 항목 행 삭제: P-2026-003 · 답사 · 베뉴 서칭·계약 (W-000007)"
+        ]
+      }
+    },
+    "keyUnassigned": {
+      "keyUnassigned": [
+        "연사·패널 섭외 · 가상 브랜드 런칭 쇼케이스운영계획서 확정 · 운영 PM · 임팩트 상 난이도 상 · 2.0 M/D · 2026-10-29담당 정하기"
+      ],
+      "openNotes": [
+        "요청 발주 범위·납기·현장 책임자 · 가상 브랜드 런칭 쇼케이스답사 · 협력사 발주·관리 · 운영 PM · 미리보기 사용자 · 2026-09-10 09:00보기",
+        "요청 수용 인원·전기·반입 시간·주차 · 가상 파트너 서밋답사 · 베뉴 서칭·계약 · 운영 PM · 팀원1 · 2026-09-01 10:00보기"
+      ],
+      "after": {
+        "tab": "A",
+        "selected": "P-2026-003",
+        "open": true,
+        "dom": true,
+        "row": true,
+        "keyHighlight": true
+      }
+    },
+    "milestoneDeleteBlocked": {
+      "key": "P-2026-003|운영계획서 확정",
+      "milestonesBefore": 43,
+      "blocked": {
+        "button": false,
+        "reason": "세부 항목 1건이 있어 삭제할 수 없습니다. 항목을 먼저 지우세요."
+      },
+      "attempt": {
+        "result": null,
+        "milestones": 43,
+        "still": true
+      }
+    },
+    "partFilter": {
+      "before": {
+        "rows": [
+          "디자인·제작",
+          "모객"
+        ],
+        "part": "",
+        "stored": null,
+        "onChip": "전체"
+      },
+      "filtered": {
+        "rows": [
+          "디자인·제작"
+        ],
+        "part": "디자인·제작",
+        "stored": "디자인·제작",
+        "onChip": "디자인·제작"
+      },
+      "e": {
+        "title": "미해결 질문·요청 · 디자인·제작",
+        "items": 0
+      },
+      "reset": {
+        "rows": [
+          "디자인·제작",
+          "모객"
+        ],
+        "part": "",
+        "stored": "",
+        "onChip": "전체"
+      }
+    }
+  },
+  "failures": [],
+  "timelineTip": {
+    "rows": 5,
+    "shown": true,
+    "text": "가상 테크 컨퍼런스 2026 · 착수 2026-06-05(추정) · 행사 2026-09-03~2026-09-04 · 정산 2026-10-05",
+    "hiddenAfter": true
+  },
+  "consoleErrorCount": 0,
+  "finishedAt": "2026-09-14T07:29:17.860Z"
+}
