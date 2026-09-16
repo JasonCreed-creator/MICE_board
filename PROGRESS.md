@@ -281,19 +281,16 @@
 - 실렌더: `CHROME_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome node scripts/render-check.js`
 - **Chrome 확장은 없다** → Apps Script 직접 반영·시트 쓰기 불가. 시트는 Drive 커넥터로 **읽기만** 가능
 
-### ⚠️ 저장소가 공개(public) 상태 — 미해결
-`JasonCreed-creator/MICE_board` 가 공개로 만들어졌다(목표는 비공개였다). 이미 푸시된 커밋에 **발주처·계약금액 · 팀원 17명 실명 · 회사 도메인 이메일 · 시트 URL · Apps Script 프로젝트 ID**(PROGRESS.md · `data/*.tsv`)가 들어 있다.
-- 기획자님 판단: "일단 그대로, 6턴 먼저"
-- **푸시가 막혀 있다** — 권한 분류기가 공개 저장소 게시를 거부. 6턴 결과는 전부 로컬 커밋으로만 있다
-- 푸는 방법: ① 저장소를 비공개로 전환(Settings → General → Danger Zone → Change visibility) ② `.claude/settings.local.json` 에 `git push` 허용 규칙
-- 6턴 산출물에는 **새 민감 정보를 넣지 않았다**(`.clasp.json` 미커밋 · 실제 프로젝트 ID 는 어느 파일에도 없음 · 정적 검사 6번이 자격증명·실계정을 자동으로 막는다)
+### 저장소 공개 유지 — 기획자님 결정(2026-09-15 종결)
+`JasonCreed-creator/MICE_board` 는 **공개(public)** 이고, 기획자님이 **비공개 전환 계획 없음**을 확정했다. **다음 세션은 이 건을 다시 묻지 않는다.**
+- 공개 상태로 이미 올라간 것: 발주처·계약금액 · 팀원 실명 · 회사 도메인 이메일 · 시트 URL · Apps Script 프로젝트 ID(`PROGRESS.md` · `data/*.tsv`)
+- 앞으로 지킬 것: **새 민감 정보를 더 넣지 않는다.** `.clasp.json` 은 커밋하지 않고(`.clasp.json.example` 만), 실제 프로젝트 ID·배포 ID·자격증명은 어느 파일에도 쓰지 않는다 — `scripts/static-check.js` 6번 검사가 이를 자동으로 막는다
 
 ### 기획자님 할 일
-1. **저장소 공개 여부 결정** — 위 ⚠️ (푸시·PR 이 여기에 걸려 있다)
-2. **버전 6 배포** — 지금은 수동: Apps Script 편집기에 `apps-script/Code.gs`·`index.html` 붙여넣기 → 배포 관리 → 새 버전. `appsscript.json` 은 변경 없음
-3. **자동 배포로 넘어가려면**(가이드 §10): 로컬 PC 에 Node LTS 설치 → `npm install` → Apps Script API 켜기 → `npx clasp login` → 배포 ID 확인 → GitHub Secret 3개 등록(`CLASPRC_JSON`·`CLASP_SCRIPT_ID`·`CLASP_DEPLOYMENT_ID`)
-4. 시트 메뉴 **[팀 보드 → 드롭다운 목록 새로고침]** 1회 → `팀원` 탭 F열(이메일)이 생긴다. 팀원 이메일을 넣으면 "내 주간 공수" 가 자동으로 본인을 알아본다(안 넣으면 이름 선택)
-5. **확인 필요 2~9번**(2026-09-13 체크인 표) 여전히 대기
+1. **버전 6 배포** — 지금은 수동: Apps Script 편집기에 `apps-script/Code.gs`·`index.html` 붙여넣기 → 배포 관리 → 새 버전. `appsscript.json` 은 변경 없음
+2. **자동 배포로 넘어가려면**(가이드 §10): 로컬 PC 에 Node LTS 설치 → `npm install` → Apps Script API 켜기 → `npx clasp login` → 배포 ID 확인 → GitHub Secret 3개 등록(`CLASPRC_JSON`·`CLASP_SCRIPT_ID`·`CLASP_DEPLOYMENT_ID`)
+3. 시트 메뉴 **[팀 보드 → 드롭다운 목록 새로고침]** 1회 → `팀원` 탭 F열(이메일)이 생긴다. 팀원 이메일을 넣으면 "내 주간 공수" 가 자동으로 본인을 알아본다(안 넣으면 이름 선택)
+4. **확인 필요 2~9번**(2026-09-13 체크인 표) 여전히 대기
 
 ### 다음 턴 후보
 ① C4 미입력 항목 유도 + C5 주간 현황 복사(이번에 제외) ② 등록 창구 `doPost` + 토큰 ③ MICE 커뮤니케이터 연동 ④ mock 을 실시트와 같은 역할 8종으로 올려 파생 카탈로그를 실렌더에서 전수 검증(지금은 단위 검증 + 화면 확인으로 대체)
