@@ -1,0 +1,7 @@
+# clasp 가 Apps Script 로 올릴 파일 — 경로는 .clasp.json 의 rootDir(apps-script) 기준이다.
+# 먼저 전부 제외하고, 아래 3개만 다시 넣는다. rootDir 밖(src·docs·tests·mock…)은 애초에 올라가지 않는다.
+**/**
+
+!appsscript.json
+!Code.gs
+!index.html

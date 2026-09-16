@@ -1,0 +1,24 @@
+{
+  "name": "mice-team-board",
+  "version": "1.4.0",
+  "private": true,
+  "description": "마이스 비즈 팀 프로젝트 보드 — 구글 스프레드시트 + Apps Script 웹앱 대시보드(빌드·검수 게이트·clasp 배포 도구 모음)",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "node scripts/build.js",
+    "test": "node --test tests/metrics.test.js tests/sample-data.test.js tests/schema.test.js",
+    "render": "node scripts/render-check.js",
+    "static": "node scripts/static-check.js",
+    "gate": "npm run build && npm run test && npm run render && npm run static",
+    "clasp:check": "node -e \"const f=require('fs');if(!f.existsSync('.clasp.json')){console.error('[clasp] .clasp.json 이 없습니다. .clasp.json.example 을 .clasp.json 으로 복사한 뒤 scriptId 에 Apps Script 프로젝트 ID 를 넣으세요(가이드 §10.3). 이 파일은 저장소에 커밋하지 않습니다.');process.exit(1)}\"",
+    "push": "npm run clasp:check && clasp push -f",
+    "pull": "npm run clasp:check && clasp pull",
+    "deploy": "node -e \"const f=require('fs'),cp=require('child_process');if(!f.existsSync('.clasp.json')){console.error('[deploy] .clasp.json 이 없습니다. .clasp.json.example 을 복사해 scriptId 를 넣으세요(가이드 §10.3).');process.exit(1)}const id=process.env.CLASP_DEPLOYMENT_ID;if(!id){console.error('[deploy] 배포 ID(환경 변수 CLASP_DEPLOYMENT_ID)가 없습니다. 가이드 §10.5 대로 확인해 넣으세요. 배포 ID 를 고정해야 웹앱 주소가 그대로 유지됩니다.');process.exit(1)}const d=process.env.CLASP_DEPLOY_DESC||('team board '+new Date().toISOString().slice(0,10));const p=cp.spawnSync('clasp',['push','-f'],{stdio:'inherit',shell:true});if(p.status){process.exit(p.status)}const r=cp.spawnSync('clasp',['create-deployment','-i',id,'-d',JSON.stringify(d)],{stdio:'inherit',shell:true});process.exit(r.status||0)\""
+  },
+  "devDependencies": {
+    "@google/clasp": "^3.4.1"
+  }
+}

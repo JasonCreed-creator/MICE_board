@@ -1,0 +1,85 @@
+# 검수 게이트 — 빌드 재현성 · 테스트 · 실렌더 · 정적 검사 (결정 D23)
+#
+# CLAUDE.md §3 "검수 게이트: 빌드 → 테스트 → 실렌더 → 정적 검사" 를 사람이 매번 손으로 돌리지 않게 자동화한 것이다.
+# 앱 런타임 의존성은 0 이므로 이 워크플로는 `npm install` 을 하지 않는다(테스트·빌드·정적 검사는 Node 내장 모듈만 쓴다).
+#
+# 액션 버전: actions/checkout v7 · actions/setup-node v7 · actions/upload-artifact v7
+#   — 2026-09-15 각 저장소 릴리스 페이지에서 현재 메이저를 확인함(그때 최신: checkout v7.0.1 · setup-node v7.0.0 · upload-artifact v7.0.1).
+
+name: 검수 게이트
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  # deploy.yml 이 배포 전에 이 게이트를 먼저 돌린다
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    name: 빌드·테스트·실렌더·정적 검사
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 저장소 가져오기
+        uses: actions/checkout@v7
+
+      - name: Node 22 준비
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          # package-lock.json 이 없고 설치할 런타임 의존성도 없으므로 cache 를 켜지 않는다
+
+      - name: 1) 빌드
+        run: node scripts/build.js
+
+      - name: 2) 빌드 재현성 — 산출물이 src 와 같은지
+        run: |
+          if ! git diff --quiet; then
+            echo "달라진 파일:"
+            git --no-pager diff --stat
+            echo "::error title=빌드 산출물이 최신이 아닙니다::src/ 를 고친 뒤 'node scripts/build.js' 를 돌려 apps-script/index.html · apps-script/Code.gs · preview/dashboard-preview.html 까지 함께 커밋하세요."
+            exit 1
+          fi
+          echo "빌드 산출물과 src 가 같습니다."
+
+      - name: 3) 테스트 (node --test)
+        run: node --test tests/metrics.test.js tests/sample-data.test.js tests/schema.test.js
+
+      - name: 러너 Chrome 찾기
+        id: chrome
+        run: |
+          CHROME="$(command -v google-chrome-stable || command -v google-chrome || command -v chromium-browser || command -v chromium || true)"
+          if [ -n "$CHROME" ]; then
+            echo "path=$CHROME" >> "$GITHUB_OUTPUT"
+            echo "러너 Chrome: $CHROME"
+          else
+            echo "path=" >> "$GITHUB_OUTPUT"
+            echo "::warning title=실렌더를 건너뜁니다::이 러너에 Chrome 이 없어 scripts/render-check.js 를 실행하지 못했습니다. 외부 브라우저를 내려받지 않는 것이 이 저장소 규칙이므로, 실렌더는 로컬에서 'npm run render' 로 확인하세요."
+          fi
+
+      - name: 4) 실렌더 (Chrome 이 있을 때만)
+        if: steps.chrome.outputs.path != ''
+        env:
+          CHROME_PATH: ${{ steps.chrome.outputs.path }}
+        run: node scripts/render-check.js
+
+      - name: 5) 정적 검사
+        run: node scripts/static-check.js
+
+      - name: 스크린샷·실렌더 보고서 올리기
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: render-check-${{ github.run_number }}
+          path: |
+            preview/screenshots/**
+          if-no-files-found: warn
+          retention-days: 14

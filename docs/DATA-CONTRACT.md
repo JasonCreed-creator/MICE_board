@@ -4,6 +4,7 @@
 - 개정: 2026-09-11 · 3.1 패치(§4.4·§4.5·§4.7 변경 — 각 절에 [3.1 변경] 표시) · 기준 문서 `docs/SPEC-v1.md` **v1.1**
 - 개정: 2026-09-13 · 4턴 대시보드 편집(§2.1 `meta.user` · §2.9 `history` · §3.9 `변경이력` · §5 쓰기 API 3종 · §8 헬퍼 · **§9 편집 계약 신설** — `src/schema.js`) · 기준 문서 `docs/SPEC-v1.md` **v1.2**
 - 개정: 2026-09-14 · 5턴 마일스톤 업무 블럭·주석(§2.1 `meta.blocksSource` · **§2.10~2.12 `items`·`notes`·`blocks`** · §3.8 ID 규칙 `W-`·`N-` · **§3.10~3.12 `세부항목`·`주석`·`업무블럭` 탭** · §5 `addItems`·`saveRow('items'|'notes')`·`deleteRow('items')`·**배정 동기화 규칙** · §8 헬퍼 · **§9.9~9.14 편집 계약 확장**(검증·삭제·롤업·배정 동기화·주석 집계·기본 카탈로그) · 충돌 검사는 §9.9 → **§9.15**, 검산 목록은 §9.10 → **§9.16** 으로 이동) · 기준 문서 `docs/SPEC-v1.md` **v1.3**
+- 개정: 2026-09-15 · 6턴 부채 정리·운영 UX·자동화(§2.1 `meta.userMember` · §2.3·§3.4 `팀원` **이메일**(F열) · §2.9·§3.9 동작 **`되돌림`** · §5 **서버 API 3종 자리**(되돌리기·마일스톤 일괄 처리·카탈로그 파생) · §9.1 팀원 6열·동작 5종 · §9.14 기본 카탈로그 **44** · **§9.17~9.22 편집 계약 확장**(본인 매칭·저장 가드·되돌리기·일괄 처리·카탈로그 파생·주간 공수 행)) · 기준 문서 `docs/SPEC-v1.md` **v1.4**
 - 목적: `getBootstrap()`(gas 모드)과 `mock/sample-data.json`(mock 모드)이 **완전히 같은 JSON 구조**를 내놓게 하고, 시트 열 ↔ JSON 필드 ↔ 산식 ↔ 쓰기 API를 한 문서로 고정한다.
 - 모든 서브에이전트(① 시트·스키마 / ② 대시보드 / ③ 연동·가이드)는 이 문서만 보고 작업한다. 이 문서와 어긋나는 구현은 병합 시 이 문서 기준으로 고친다.
 
@@ -22,7 +23,7 @@
 | 정렬 | 배열 순서는 시트 행 순서 그대로. 프런트가 필요 시 정렬 |
 | 헤더 행 | 모든 탭 1행은 헤더. 데이터는 2행부터. 헤더 행이 빈 시트는 빈 배열로 반환 |
 | 필수값 누락 행 | 첫 열(ID·주차·이름·프로젝트ID)이 비어 있는 행은 건너뛴다 |
-| 금지 필드 | 단가·급여·인건비·원가율·개인 연락처 필드는 어느 탭·어느 JSON에도 두지 않는다(결정 D3) |
+| 금지 필드 | 단가·급여·인건비·원가율 필드는 어느 탭·어느 JSON에도 두지 않는다(결정 D3). 개인 연락처도 두지 않는다 — **(v1.4 · D17)** 예외는 `팀원` 탭의 **회사 업무 계정 이메일** 하나뿐이고, 개인 휴대폰·개인 메일은 계속 금지. `scripts/static-check.js` 가 이 규칙을 자동으로 검사한다 |
 
 ---
 
@@ -55,7 +56,8 @@
 | `sheetUrl` | 문자열 | gas: `SpreadsheetApp.getActiveSpreadsheet().getUrl()` · mock: `""` → "시트 열기" 링크 비활성 |
 | `today` | `YYYY-MM-DD` | **기준일**. gas: 서버 오늘(Asia/Seoul) · mock: `"2026-09-10"` 고정. 프런트·산식의 "오늘"은 반드시 이 값을 쓴다(실렌더·테스트 재현성). 값이 없으면 브라우저 현재 날짜로 대체 |
 | `user` | 문자열 | **(v1.2)** 웹앱을 연 사용자. gas: `Session.getActiveUser().getEmail()`(실패·빈 값이면 `""`) · mock: `"미리보기 사용자"`. 화면 표시와 `변경이력` 사용자 열에만 쓴다(D6b — SPEC §1.1). 권한 판단에 쓰지 않는다. **(v1.3)** 주석 `author` 와 "본인만 수정" 판정에도 같은 값을 쓴다 |
-| `blocksSource` | `"default"` \| `"sheet"` | **(v1.3)** `blocks[]` 의 출처. gas: `업무블럭` 탭이 있으면 `"sheet"`, 없으면 코드 기본 카탈로그(`Schema.DEFAULT_BLOCKS`)를 돌려주며 `"default"` · mock: `"default"`. 화면은 `"default"` 일 때 [블럭 추가] 안에 "기본 카탈로그 사용 중 — 시트 메뉴 [팀 보드 → 드롭다운 목록 새로고침] 이 `업무블럭` 탭을 만듭니다" 한 줄만 안내한다 |
+| `userMember` | 문자열 | **(v1.4 · D17)** `meta.user`(로그인 이메일)를 `팀원` 탭 이메일 열과 맞춰 찾은 **팀원 이름**. 못 찾으면 `""` — 화면이 이름 선택(브라우저 기억)으로 넘어간다. 판정은 `Schema.matchMember`(§9.17) 하나로 서버·mock 이 공유한다. `퇴사` 팀원은 매칭하지 않는다. mock: `"팀원1"`. **권한 판단에 쓰지 않는다**(D6b) — 내 주간 공수·주석 작성자 기본값 같은 편의용 |
+| `blocksSource` | `"default"` \| `"sheet"` \| **(v1.4)** `"default+derived"` \| `"sheet+derived"` | **(v1.3)** `blocks[]` 의 출처. gas: `업무블럭` 탭이 있으면 `"sheet"`, 없으면 코드 기본 카탈로그(`Schema.DEFAULT_BLOCKS`)를 돌려주며 `"default"` · mock: `"default"`. 화면은 `"default"` 일 때 [블럭 추가] 안에 "기본 카탈로그 사용 중 — 시트 메뉴 [팀 보드 → 드롭다운 목록 새로고침] 이 `업무블럭` 탭을 만듭니다" 한 줄만 안내한다 |
 
 ### 2.2 `settings`
 | 필드 | 형식 | 기본값 | 시트 위치(§3.7) |
@@ -106,6 +108,7 @@
 | `capacityMd` | number | C 월 가용 M/D | 빈 값 → `settings.capacityMdPerMonth` |
 | `status` | string | D 상태 | 재직/휴직/퇴사/지원. 빈 값 → `"재직"`. `지원` 은 가동률·경고 대상에서 제외 |
 | `color` | string | E 색상 | HEX(`#RRGGBB`) 또는 `""`(프런트가 자동 배색) |
+| `email` | string | F 이메일 | **(v1.4 · D17)** 선택 입력 · 빈 값은 `""`. **회사 업무 계정만**(개인 메일·휴대폰 금지). 값이 있으면 형식 검증(`@` 앞뒤 + 점 있는 도메인)과 **팀원 간 유일**(대소문자 무시). 로그인 이메일과 맞으면 `meta.userMember` 가 된다(§9.17 `matchMember`). 시트 F1 헤더가 없으면 서버가 헤더만 만들어 기존 데이터를 보존한다 |
 
 ### 2.4 `projects[]` ← 탭 `프로젝트`
 | 필드 | 형식 | 열 | 설명 |
@@ -182,9 +185,18 @@
 | `user` | string | B 사용자 | 기록 당시 `meta.user` 와 같은 값(이메일 또는 `""`) |
 | `sheet` | string | C 탭 | 바뀐 탭 이름 = `Schema.TABLES[table].sheet`(`프로젝트`·`팀원`·`공수기록`·`마일스톤`·`정산`·`배정`) |
 | `key` | string | D 키 | `Schema.keyLabel(table, row)` 결과(§9.6). 예 `P-2026-003` · `P-2026-003 · 답사` · `2026-09-07 · 팀원1 · P-2026-001` |
-| `action` | `"추가"` \| `"수정"` \| `"삭제"` \| `"저장"` | E 동작 | `저장` = 묶음 저장(배정 저장 · 주간 공수 저장 · 표준 마일스톤 생성 · 완료 처리) |
+| `action` | `"추가"` \| `"수정"` \| `"삭제"` \| `"저장"` \| **(v1.4)** `"되돌림"` | E 동작 | `저장` = 묶음 저장(배정 저장 · 주간 공수 저장 · 표준 마일스톤 생성 · 완료 처리 · **(v1.4)** 마일스톤 일괄 처리). `되돌림` = 이력 한 줄 복원(§9.19 · D19). 목록의 단일 원천은 `Schema.HISTORY.actions` 5종 |
 | `summary` | string | F 변경 내용 | `Schema.summarize(...)` 결과(§9.7). 줄바꿈(`\n`) 포함 가능 |
-| (내보내지 않음) | JSON 문자열 | G 이전 행(백업) | 삭제·수정 전 행의 JSON. **시트에서만 본다**(가이드 §6.9 복구 절차) |
+| `backup` | 값 \| `null` \| 문구 | G 이전 행(백업) | **(v1.4 개정)** 삭제·수정 전 행의 JSON 을 **푼 값**. v1.3 까지는 내보내지 않았으나, 화면이 `Schema.restoreCheck`(§9.19)로 [되돌리기] 가능 여부를 그 자리에서 판정해야 해 내보낸다. 빈 칸은 `null`, 읽을 수 없으면 `'(백업을 읽을 수 없음)'` |
+
+**(v1.4 · D19) 되돌리기용 추가 필드** — 화면은 이 두 필드로 [되돌리기] 버튼과 사유를 그린다.
+
+| 필드 | 형식 | 설명 |
+|---|---|---|
+| `row` | 정수 | 그 이력이 있는 **시트 행 번호** — 되돌리기 호출 때 인덱스와 함께 보내 서버가 대조한다(불일치 = 목록이 바뀜) |
+| `backup` | 위 표 참조 | 백업이 `null` 이면 화면이 버튼 대신 사유를 보여준다. 최종 판정은 서버가 한 번 더 한다 |
+
+> 화면·서버가 **같은 `Schema.restoreCheck`** 를 쓰므로 문구가 어긋나지 않는다. 백업은 셀당 최대 약 4.9만 자 × 최근 이력 건수까지 실릴 수 있다 — 실제로는 행 1~수십 건이라 수 KB 수준이고, 커지면 이력 보관 건수를 줄이거나 백업만 별도 호출로 떼는 선택지가 남아 있다.
 
 ---
 
@@ -233,11 +245,13 @@
 
 ### 2.12 `blocks[]` ← 탭 `업무블럭` (v1.3 · D14 · 카탈로그)
 
-파트별 업무 블럭 카탈로그. **시트에서만 편집**하고 대시보드는 읽기만 한다(`saveRow`·`deleteRow` 대상 아님). 탭이 없으면 `getBootstrap` 이 코드 기본 카탈로그 `Schema.DEFAULT_BLOCKS`(33건 · §9.14)를 그대로 돌려주고 `meta.blocksSource = "default"`. `setupSheets`·`setupSheetsEmpty` 와 메뉴 [팀 보드 → 드롭다운 목록 새로고침] 이 탭을 만들어 기본값을 채운다(이미 있으면 건드리지 않음). mock 은 기본 카탈로그와 **완전히 같은** 33건.
+파트별 업무 블럭 카탈로그. **시트에서만 편집**하고 대시보드는 읽기만 한다(`saveRow`·`deleteRow` 대상 아님). 탭이 없으면 `getBootstrap` 이 코드 기본 카탈로그 `Schema.DEFAULT_BLOCKS`(**v1.4** 44건 · §9.14)를 그대로 돌려주고 `meta.blocksSource = "default"`. `setupSheets`·`setupSheetsEmpty` 와 메뉴 [팀 보드 → 드롭다운 목록 새로고침] 이 탭을 만들어 기본값을 채운다(이미 있으면 건드리지 않음). mock 은 기본 카탈로그 중 **그 시트 역할 목록에 해당하는 블럭 전부**와 같다(현재 mock 은 역할 6종 → 33건).
+
+**(v1.4 · D22) 카탈로그 파생** — 내보내기 직전에 `Schema.blocksWithFallback(blocks, settings)`(§9.21)를 거친다. `settings.roles` 에 있는데 블럭이 0개인 파트에는 **공통 블럭 5종**을 그 파트 이름으로 파생해 `blocks[]` **뒤에 덧붙인다**. 파생분은 시트에 쓰지 않는다(화면에서 고를 수만 있고, 고른 순간 `세부항목` 행이 된다). 파생이 하나라도 섞이면 `meta.blocksSource` 에 `+derived` 가 붙는다.
 
 | 필드 | 형식 | 열 | 설명 |
 |---|---|---|---|
-| `part` | string | A 파트 | `settings.roles` 중 1. 유일키 = `part + block` |
+| `part` | string | A 파트 | `settings.roles` 중 1. 유일키 = `part + block`. **(v1.4)** 파생분도 같은 모양이라 화면은 원본과 파생을 구분하지 않고 쓴다 |
 | `block` | string | B 블럭 | 블럭 이름(화면 [블럭 추가] 의 체크 칩) |
 | `milestone` | string | C 기본 마일스톤 | 표준 마일스톤 9종 중 1(§2.2). 화면은 펼친 마일스톤과 같은 블럭을 먼저 보여준다 |
 | `md` | number | D 기본 M/D | 0.5 단위 ≥ 0. 항목을 만들 때 `plannedMd` 초기값 |
@@ -266,9 +280,10 @@
 - 드롭다운: 팀원 → `팀원!A2:A100` · 프로젝트ID → `설정!E2:E600`(공통코드 + 프로젝트ID 합본, 아래 3.7)
 - 실투입 M/D: 5 초과 시 경고(데이터 검증 "경고 표시", 입력 거부 아님)
 
-### 3.4 `팀원` (A:E)
-`이름 | 주역할 | 월 가용 M/D | 상태 | 색상`
-- 드롭다운: 주역할 → `설정!C2:C50` · 상태 → 리스트 `재직,휴직,퇴사`
+### 3.4 `팀원` (A:F) — v1.4 이메일 추가
+`이름 | 주역할 | 월 가용 M/D | 상태 | 색상 | 이메일`
+- 드롭다운: 주역할 → `설정!C2:C50` · 상태 → 리스트 `재직,휴직,퇴사,지원`
+- **F 이메일(v1.4 · D17)**: 선택 입력 · 회사 업무 계정만 · 드롭다운·수식 없음. 기존 시트는 **F1 헤더가 비어 있으면 헤더만** 써 넣는다(`ensureMemberEmailColumn_` — `setupSheets` 와 메뉴 [드롭다운 목록 새로고침] 에서 호출). 데이터는 건드리지 않는다. `Schema.TABLES.members.width` 는 **6**
 
 ### 3.5 `마일스톤` (A:G)
 `프로젝트ID | 마일스톤 | 예정일 | 완료일 | 담당 | 상태`
@@ -309,13 +324,14 @@
 
 ### 3.9 `변경이력` (A:G) — v1.2 · D7
 `일시 | 사용자 | 탭 | 키 | 동작 | 변경 내용 | 이전 행(백업)`
-- 탭 이름·헤더의 단일 원천은 `Schema.HISTORY`(`src/schema.js`): `{ sheet:'변경이력', headers:[위 7개], actions:['추가','수정','삭제','저장'] }`
+- 탭 이름·헤더의 단일 원천은 `Schema.HISTORY`(`src/schema.js`): `{ sheet:'변경이력', headers:[위 7개], actions:['추가','수정','삭제','저장','되돌림'] }` — **(v1.4)** `되돌림` 추가(D19)
 - `setupSheets()`·`setupSheetsEmpty()` 가 만든다. **탭이 없으면 첫 쓰기 때 `ensureHistorySheet_()` 가 자동 생성**한다(2턴에 만든 기존 시트도 재설정 없이 대응). `clearSampleData` 는 이 탭을 **비우지 않는다**
 - A 일시: 문자열 `YYYY-MM-DD HH:mm:ss`(서버 시각, TZ). B 사용자: `userEmail_()` = `Session.getActiveUser().getEmail()`, 실패·빈 값이면 `""`. C 탭: `Schema.TABLES[table].sheet`. D 키: `Schema.keyLabel`. E 동작: `Schema.HISTORY.actions` 중 1. F 변경 내용: `Schema.summarize` 결과(여러 줄 가능)
 - G 이전 행(백업): **삭제** = 지운 행 전체를 JSON 문자열로 — 프로젝트 연쇄 삭제는 `{ project, assignments:[], milestones:[], settlements:[] }` 처럼 함께 지운 행을 모두 담는다. **수정** = 수정 전 행 JSON. **추가** = 빈 값. **저장**(묶음) = 교체 전 행 배열 JSON(배정 저장 · 주간 공수 저장), 표준 마일스톤 생성·완료 처리는 빈 값 또는 이전 행
 - 행 추가(append)만 한다. 스크립트만 쓰고 사람은 손으로 고치지 않는다(가이드 §9.4). 드롭다운·수식·데이터 검증 없음. 열 추가는 맨 오른쪽에만
 - `getBootstrap()` 은 마지막 30행을 읽어 최신 먼저 정렬해 `history[]`(§2.9)로 내보내고 **G 열은 내보내지 않는다**(용량·민감도)
-- 시트에서 직접 고친 값은 여기에 남지 않는다(구글 시트 "버전 기록"이 담당). 대시보드 쓰기 경로(SPEC §5.2 1~6 · v1.3 8)만 기록한다. **(v1.3)** 탭 열에 `세부항목`·`주석`·`배정`(동기화) 이 추가로 등장한다
+- 시트에서 직접 고친 값은 여기에 남지 않는다(구글 시트 "버전 기록"이 담당). 대시보드 쓰기 경로(SPEC §5.2 1~6 · v1.3 8 · **v1.4 9·10**)만 기록한다. **(v1.3)** 탭 열에 `세부항목`·`주석`·`배정`(동기화) 이 추가로 등장한다
+- **(v1.4)** 되돌리기는 **한 줄을 더 쌓는다**(지우지 않는다) — 동작 `되돌림`, 키는 되돌린 대상의 키, 백업(G)에는 **복원 직전 상태**. 마일스톤 일괄 처리는 대상이 n건이어도 **1줄**(동작 `저장`, 키는 대상 수를 알 수 있는 요약, 백업은 이전 행 **배열**)
 
 ### 3.10 `세부항목` (A:M) — v1.3
 `세부ID | 프로젝트ID | 마일스톤 | 파트 | 블럭 | 담당 | 임팩트 | 난이도 | 계획 M/D | 예정일 | 상태 | 비고`
@@ -421,7 +437,7 @@ mock 기준일 2026-09-10 에서 §5 가상 데이터는 과부하(팀원2 · 20
 
 ## 5. 쓰기 API 계약 (`DataProvider` 인터페이스 = `Code.gs` 함수 시그니처)
 
-프런트는 `DataProvider` 8개 메서드(v1.1 까지 4개 + v1.2 `saveRow`·`deleteRow`·`saveEffortWeek` + v1.3 `addItems`)만 호출한다. gas 어댑터는 `google.script.run.withSuccessHandler(...).withFailureHandler(...)` 를 Promise 로 감싼다. mock 어댑터는 메모리 상태를 갱신하고 `console.info("[mock write] <함수명>", payload)` 를 남긴다. **응답 구조는 두 모드가 동일**하며, 프런트는 응답을 로컬 상태에 반영한 뒤 재렌더한다(전체 재로드 없음).
+프런트는 `DataProvider` 메서드(v1.1 까지 4개 + v1.2 `saveRow`·`deleteRow`·`saveEffortWeek` + v1.3 `addItems` = 8개 · **v1.4 되돌리기·마일스톤 일괄 처리 2개 추가 → §5.1**)만 호출한다. gas 어댑터는 `google.script.run.withSuccessHandler(...).withFailureHandler(...)` 를 Promise 로 감싼다. mock 어댑터는 메모리 상태를 갱신하고 `console.info("[mock write] <함수명>", payload)` 를 남긴다. **응답 구조는 두 모드가 동일**하며, 프런트는 응답을 로컬 상태에 반영한 뒤 재렌더한다(전체 재로드 없음).
 
 | 메서드 | 인자 | 반환(성공) | 실패 |
 |---|---|---|---|
@@ -462,6 +478,59 @@ mock 기준일 2026-09-10 에서 §5 가상 데이터는 과부하(팀원2 · 20
 - `deleteRow('items')`: 그 세부ID 의 주석을 백업(`{ item, notes:[] }`)한 뒤 함께 지우고 배정 동기화. `deleteRow('projects')` 연쇄에 `items`·`notes` 를 추가(백업 JSON `{ project, assignments, milestones, settlements, items, notes }`, 응답 `removed.items`·`removed.notes`). 자동 배정 행은 배정 연쇄에 포함된다
 - 탭이 없을 때: `세부항목`·`주석` 탭은 **첫 쓰기 때 자동 생성**(`ensureHistorySheet_` 와 같은 방식 — §3.10·§3.11 헤더·드롭다운·M 수식), `업무블럭` 탭은 만들지 않는다(기본 카탈로그 폴백 유지 — 탭 생성은 `setupSheets`·메뉴만)
 
+### 5.1 v1.4 서버 API — 되돌리기 · 마일스톤 일괄 처리 · 카탈로그 파생 (D19·D21·D22)
+
+> 판정 규칙은 전부 `src/schema.js` 순수 함수(§9.19~§9.21)라 브라우저·Node·Apps Script 세 곳에서 같은 결과를 낸다. 화면·mock 어댑터는 **쌍으로** 같은 동작을 구현한다(§6). 클라이언트가 부르는 이름은 `restoreHistory`·`bulkMilestone` 이다(`…Api_` 접미사가 붙은 내부 함수는 Apps Script 가 클라이언트에 노출하지 않는다). 두 API 모두 **객체 인자 하나**를 권장하고 위치 인자도 받는다.
+
+**(1) 되돌리기 — `restoreHistory(…)` (D19)**
+
+| 항목 | 내용 |
+|---|---|
+| 인자 | `{ index, row, expected }` — `index` 는 부트스트랩 `history[]` 인덱스(0 = 최신) · `row` 는 그 항목의 **시트 행 번호**(대조용, 필수) · `expected` 는 선택(`{ at, sheet, key, action }`, 빈 필드는 건너뜀). `row` 가 어긋나면 `목록이 바뀌었습니다. 새로고침 후 다시 시도하세요.` |
+| 판정 | `Schema.restoreCheck(entry, data)`(§9.19) → `{ ok, reason, table, rows, mode }`. `ok:false` 면 `reason` 을 그대로 한국어 `Error` 로 |
+| 쓰기 | `mode` 별 — `replace`(그 키의 행 묶음 교체) · `row`(단일 행 되돌리기) · `delete`(추가의 되돌리기 = 그 행 삭제). 잠금 → 판정 → 충돌 검사 → 행 단위 부분 쓰기(수식 열 보존) |
+| 이력 | **1건 추가**(지우지 않는다) — 동작 `되돌림` · 탭·키는 되돌린 대상 · 백업(G)은 **복원 직전 상태** → 되돌리기의 되돌리기가 가능 |
+| 응답 | `{ ok, table, sheet, mode, key, restored, removed, rows, removedKeys, history, historyExtra }` + 대상별 추가 — 배정·세부항목이면 `projectId`·`assignments`(그 프로젝트 배정 **전체**, 동기화 후)·`overlaps`, 공수기록 묶음이면 `member`·`week`·`effortLogs`(그 주차 **전체**) |
+| 탭별 실제 동작 | `배정` = 백업이 있으면 언제나 그 프로젝트 배정 행 **전체 교체** · `공수기록`(키가 `주차 · 팀원`) = 그 팀원·주차 행 전체 교체 · 그 밖(마일스톤 일괄 처리 포함) = 백업 배열의 **행마다 키로 찾아** 되돌리고 없으면 다시 만든다 · `mode:'delete'` = 그 행 삭제(`세부항목`이면 딸린 주석도) |
+| 거부 | 프로젝트 `삭제`(연쇄) · **프로젝트 `추가`**(정산·마일스톤이 함께 생겨 서버가 막음 — 프로젝트 상세의 [삭제]를 쓰라고 안내) · 표준 마일스톤 생성·`addItems` 처럼 **한 번에 여러 행을 추가한 기록**(백업이 없고 키가 한 행으로 안 좁혀짐) · `변경이력` 탭 자체 · 백업 없음/깨짐 · 여러 탭이 함께 바뀐 기록 · 되돌리기를 지원하지 않는 탭(§9.19) |
+
+**(2) 마일스톤 일괄 처리 — `bulkMilestone(…)` (D21)**
+
+| 항목 | 내용 |
+|---|---|
+| 인자 | `{ action, keys, payload, expected }` — `action` = `complete` \| `shift` · `keys` = `[{ projectId, name }]`(중복은 한 번만) · `payload` = `{ done }`(비우면 서버가 오늘) 또는 `{ days }`(정수, 0 불가) / `{ due }` · `expected` = 충돌 검사용 현재 행 배열(선택, 키로 짝지어 비교) |
+| 판정 | `Schema.validateBulkMilestone(action, rows, payload, ctx)`(§9.20) → `{ ok, errors, warnings, values }`. `errors` 는 저장을 막고 `warnings`(완료일이 예정일보다 1년 이상 빠름)는 2단계 확인 문구에 싣는다 |
+| 쓰기 | 잠금 1회 → 행 단위 부분 쓰기(**F 상태 수식 보존**) → 완료 처리면 그 프로젝트들의 배정 자동 행 재동기화 |
+| 이력 | **묶음 1건** — 동작 `저장` · 백업(G)은 **이전 행 배열** JSON · 요약에 대상 건수와 무엇을 바꿨는지 |
+| 응답 | `{ ok, action, count, changed, milestones, warnings, syncs, history, historyExtra }` — `milestones` = 저장된 행 배열 · `syncs[]` = `{ projectId, assignments, overlaps, changed }`. 바뀐 값이 하나도 없으면 시트·이력을 건드리지 않고 `changed: 0, unchanged: true` |
+| 이력 키 | `일괄 N건` — 이 항목을 되돌리면 백업 배열의 행마다 키로 찾아 원래 값으로 돌아간다 |
+| 없는 키 | 하나라도 찾지 못하면 **시트를 건드리기 전에 중단**하고 `마일스톤 "P-… · 이름" 을(를) 찾을 수 없습니다. 화면을 새로고침한 뒤 다시 시도하세요.` |
+| 재동기화 | `complete` 와 `shift` **둘 다** — 예정일이 바뀌면 `Schema.itemDate` 기준 자동 배정 기간이 낡기 때문(A3 와 같은 이유) |
+
+**(3) 카탈로그 파생 — `getBootstrap` 안 (D22)**
+
+| 항목 | 내용 |
+|---|---|
+| 규칙 | `업무블럭` 탭(없으면 `Schema.DEFAULT_BLOCKS` 44건)을 읽은 뒤 **`Schema.blocksWithFallback(blocks, settings)`**(§9.21)를 거쳐 `blocks[]` 로 내보낸다 |
+| 출처 표기 | `meta.blocksSource` = `sheet` \| `default` 에 더해, 파생이 섞이면 `sheet+derived` \| `default+derived`. **`업무블럭` 탭이 있어도 쓸 행이 0이면 `default`** |
+| 파생 목록 | `meta.derivedParts` = 공통 블럭으로 채운 파트 이름 배열(없으면 `[]`) |
+| 쓰기 | **없음** — 파생분은 시트에 쓰지 않는다(`업무블럭` 탭은 여전히 시트 전용 · D14). 블럭 추가(`addItems`)도 같은 목록을 보므로 **파생 파트에서도 블럭을 고를 수 있다** |
+
+**(4) 모든 쓰기 응답의 이력 필드 (v1.4)**
+
+되돌리기가 화면 인덱스와 시트 행 번호를 맞추려면, 쓰기 직후 화면이 **서버가 실제로 남긴 이력 항목**을 그대로 받아야 한다. 그래서 v1.4 부터 모든 쓰기 응답에:
+
+| 필드 | 내용 |
+|---|---|
+| `history` | 방금 남긴 이력 항목(`{ at, user, sheet, key, action, summary, row, backup }`) · 기록 실패 시 `null` |
+| `historyExtra` | 자동 배정 동기화·표준 마일스톤 생성처럼 **따라붙은 이력**의 배열(순서대로) |
+
+> 화면은 로컬에서 이력 항목을 지어내지 말고 `history`·`historyExtra` 를 순서대로 쌓는다. 지어낸 항목에는 `row` 가 없어 되돌리기가 "목록이 바뀌었습니다" 로 막힌다. mock 어댑터도 같은 모양(`row`·`backup` 포함)을 돌려줘야 `Schema.restoreCheck` 가 양쪽에서 같은 판정을 낸다.
+| 이력 | 없음(읽기 경로) |
+| 화면 | 파생 파트의 블럭 목록 위에 "기본 블럭에서 자동으로 만든 목록입니다 — `업무블럭` 탭에서 다듬을 수 있습니다" 한 줄 |
+
+**(4) 본인 매칭 · 내 주간 공수 (D17·D18)** — 새 서버 API 없음. `getBootstrap` 이 `meta.userMember`(§2.1)를 더해 주고, 저장은 기존 `saveEffortWeek`(§5) 를 그대로 쓴다. 화면이 채울 행은 `Schema.weekEffortRows`(§9.22)가 만든다.
+
 ---
 
 ## 6. 모드 판별·DataProvider 구현 규칙 (프런트)
@@ -485,7 +554,7 @@ const provider = isGas ? GasProvider : MockProvider;   // 이 한 줄만 분기.
 - 마일스톤: §2.2 템플릿으로 생성, `진행` 프로젝트에 예정일 지난 미완료 1개
 - 정산: `완료` 프로젝트 1건 — 실마진율 28~32%, 쇼업률 60~75%, 게런티 값 있음
 - `meta`: `{ "generatedAt": "2026-09-10T09:00:00+09:00", "mode": "mock", "sheetUrl": "", "today": "2026-09-10", "user": "미리보기 사용자", "blocksSource": "default" }` · **(v1.2)** 최상위 `"history": []`(빈 배열로 시작, 대시보드 쓰기가 앞에 끼워 넣음)
-- **(v1.3)** `blocks`: 기본 카탈로그 33건과 **완전히 같음**(`Schema.DEFAULT_BLOCKS`, 테스트가 deepEqual) · `items` 6건: `진행` 프로젝트(P-2026-002)에 5 — 담당 팀원1 ×2(답사 · 운영계획서 확정, 운영 PM) · 팀원4(랜딩페이지 컨펌, 디자인·제작) · 팀원2(랜딩페이지 컨펌, 모객) · 담당 없음 1(행사 당일 등록 파트) → 합계 10 M/D = 0.5 M/M / `준비` 프로젝트(P-2026-003)에 핵심 미배정 1(운영계획서 확정 · 연사·패널 섭외 · 상·상 · 담당 없음 → E "핵심 항목 미배정" 재현) · 배정 탭에는 자동 행이 없다 — P-2026-002 의 (담당, 파트) 3묶음이 전부 수동 행(A-0005 · A-0008 · A-0006)과 겹쳐 `overlaps` 3 이 B 화면 배지로 재현된다 · `notes` 4건: 유형 4종 각 1, 미해결 2(E "미해결 질문·요청"), 마일스톤 전체 주석 1, 작성자 `mock@example.com`
+- **(v1.3 · v1.4 갱신)** `blocks`: 기본 카탈로그 중 **그 시트 역할 목록(현재 6종)에 해당하는 블럭 전부**와 같음(`Schema.DEFAULT_BLOCKS` 44건 중 33건 — 테스트가 deepEqual). `meta.userMember` 는 `"팀원1"`, `members[].email` 은 5명 중 3명만 채워 둔다(자동 매칭 화면과 이름 선택 화면을 둘 다 미리보기에서 볼 수 있게 · 도메인은 `example.com`) · `items` 6건: `진행` 프로젝트(P-2026-002)에 5 — 담당 팀원1 ×2(답사 · 운영계획서 확정, 운영 PM) · 팀원4(랜딩페이지 컨펌, 디자인·제작) · 팀원2(랜딩페이지 컨펌, 모객) · 담당 없음 1(행사 당일 등록 파트) → 합계 10 M/D = 0.5 M/M / `준비` 프로젝트(P-2026-003)에 핵심 미배정 1(운영계획서 확정 · 연사·패널 섭외 · 상·상 · 담당 없음 → E "핵심 항목 미배정" 재현) · 배정 탭에는 자동 행이 없다 — P-2026-002 의 (담당, 파트) 3묶음이 전부 수동 행(A-0005 · A-0008 · A-0006)과 겹쳐 `overlaps` 3 이 B 화면 배지로 재현된다 · `notes` 4건: 유형 4종 각 1, 미해결 2(E "미해결 질문·요청"), 마일스톤 전체 주석 1, 작성자 `mock@example.com`
 
 ---
 
@@ -567,16 +636,17 @@ SPEC v1.2 §5.2 쓰기 경로의 규칙을 코드 한 벌로 고정한다. 검�
 
 - `Code.gs` 의 마커 블록 사이는 **빌드 산출물**이다 — 직접 고치지 않는다. Code.gs 의 나머지는 손으로 유지하며 빌드가 건드리지 않는다.
 - `schema.js` 는 DOM·시트·현재 시각을 읽지 않는다("오늘"이 필요하면 `ctx` 로 받는다). 검증 메시지는 한국어, 필드 라벨은 시트 헤더(§3)와 같은 문구.
-- 공개 API: `TABLES` · `FIXED_ENUMS` · `HISTORY` · `field` · `isDateStr` · `isMonday` · `emptyRow` · `normalizeRow` · `validateRow` · `validateEffortWeek` · `deleteCheck` · `keyOf` · `keyLabel` · `findRow` · `diff` · `summarize` · `toValues` · **(v1.3)** `AUTO_ASSIGN_NOTE` · `DEFAULT_BLOCKS` · `addDaysStr` · `isKeyItem` · `itemDate` · `itemRollup` · `assignmentsFromItems` · `noteCounts`
+- 공개 API: `TABLES` · `FIXED_ENUMS` · `HISTORY` · `field` · `isDateStr` · `isMonday` · `emptyRow` · `normalizeRow` · `validateRow` · `validateEffortWeek` · `deleteCheck` · `keyOf` · `keyLabel` · `findRow` · `diff` · `summarize` · `toValues` · **(v1.3)** `AUTO_ASSIGN_NOTE` · `DEFAULT_BLOCKS` · `addDaysStr` · `isKeyItem` · `itemDate` · `itemRollup` · `assignmentsFromItems` · `noteCounts` · **(v1.4)** `GENERIC_BLOCKS` · `RESTORE_TABLES` · `matchMember` · `assignmentSaveGuard` · `restoreCheck` · `restoreLabel` · `validateBulkMilestone` · `blocksWithFallback` · `weekEffortRows`
 - `ctx = { settings, data, mode:'new'|'edit', expected }` — `data` 는 §2 부트스트랩 형태(`members`·`projects`·`effortLogs`·`milestones`·`settlements` · **(v1.3)** `items`·`notes` 만 있으면 됨). `mode:'edit'` 이면 `expected`(편집 시작 시점 행)가 있어야 immutable·자기 제외 검사가 동작한다.
 - **(v1.3)** 고정 열거 4종 추가: `level`(상·중·하 — 임팩트·난이도) · `itemStatus`(예정·진행·완료) · `noteType`(판단 근거·요청·질문·결정) · `resolved`(`예` 하나 — 빈 값이 미해결). `AUTO_ASSIGN_NOTE = '자동(세부항목)'` 은 배정 탭 비고 열의 자동 행 표식(§9.12).
+- **(v1.4)** `HISTORY.actions` 는 **5종**(`추가`·`수정`·`삭제`·`저장`·**`되돌림`**). `GENERIC_BLOCKS` 5종은 파트가 빈 채로 정의돼 있고 `blocksWithFallback`(§9.21)이 파트 이름만 채워 복제한다.
 
 **표 정의 `Schema.TABLES[table]` — 표별 키·필드 규칙.** `{ sheet, label, key[], width, formulaCols[], fields[] }`. `fields[].col` 은 §3 열 순서와 완전히 같고(0 기반), 필드 `col` + `formulaCols` 가 `0..width-1` 을 빠짐없이 덮는다. 필드 속성: `required` · `type`(`text`·`textarea`·`id`·`enum`·`member`·`project`·`projectCode`·`date`·`datetime`·`number`·`color`) · `enumFrom`(settings 목록 이름) · `enumFixed`(§2.2 고정 열거) · `nullable` · `emptyAs` · `auto` · `immutable` · `integer` · `step` · `min`(기본 0) · `monday`.
 
 | 표 | 탭 · 열 수 | 키 | 필수 | 형식·범위 | 열거 | 참조 | 유일키 | 수정 불가(immutable) | 자동(auto) |
 |---|---|---|---|---|---|---|---|---|---|
 | `projects` | 프로젝트 · 16 | `id` | 행사명 · 유형 · 상태 · 행사 시작일 · 행사 종료일 | 날짜는 `YYYY-MM-DD` 실제 달력 날짜 · **종료일 ≥ 시작일** · 게런티·예상 참가 = 정수 ≥ 0, 빈 값 `null` · 계약금액 = 정수 ≥ 0, 빈 값 `0` (`"50,000,000"` 처럼 쉼표 허용) | 유형 ← `settings.types` · 상태 ← `settings.statuses` | 담당PM → 팀원 탭(빈 값 허용) | 신규에 ID 를 넣으면 기존 ID 와 중복 검사. 수정 모드는 ID 가 `P-YYYY-NNN` 형식이어야 함 | 프로젝트ID | 프로젝트ID · 등록일 |
-| `members` | 팀원 · 5 | `name` | 이름 · 주역할 | 월 가용 M/D = 0.5 단위 ≥ 0, 빈 값 → `settings.capacityMdPerMonth`(기본 20) · 색상 = `#RRGGBB` 또는 빈 값 | 주역할 ← `settings.roles` · 상태 = 고정(재직·휴직·퇴사·지원), 빈 값 → `재직` | — | 이름(앞뒤 공백 제거 후 비교) | **이름**(D10 — 오류 문구 "대시보드에서 바꿀 수 없습니다. 시트에서 직접 수정하세요.") | — |
+| `members` | 팀원 · **6**(v1.4) | `name` | 이름 · 주역할 | 월 가용 M/D = 0.5 단위 ≥ 0, 빈 값 → `settings.capacityMdPerMonth`(기본 20) · 색상 = `#RRGGBB` 또는 빈 값 · **(v1.4)** 이메일 = 빈 값 허용, 넣으면 `이름@도메인.끝` 형식 | 주역할 ← `settings.roles` · 상태 = 고정(재직·휴직·퇴사·지원), 빈 값 → `재직` | — | 이름(앞뒤 공백 제거 후 비교) · **(v1.4)** 이메일(대소문자 무시 · 빈 값은 중복 검사 제외) | **이름**(D10 — 오류 문구 "대시보드에서 바꿀 수 없습니다. 시트에서 직접 수정하세요.") | — |
 | `effortLogs` | 공수기록 · 6 | `week` + `member` + `projectId` | 주차 · 팀원 · 프로젝트ID | 주차 = 실제 날짜이면서 **월요일** · 실투입 M/D = 0.5 단위 ≥ 0, 빈 값 `0` | — | 팀원 → 팀원 탭 · 프로젝트ID → 프로젝트 탭 **또는** `settings.commonCodes`(없으면 `G-내부`·`G-영업`·`G-휴가`) | (주차·팀원·프로젝트ID) — 수정 모드에서 자기 자신 제외 | — | 기록일시 |
 | `milestones` | 마일스톤 · 6 (F 수식) | `projectId` + `name` | 프로젝트ID · 마일스톤 · 예정일 | 예정일·완료일 = `YYYY-MM-DD`(완료일은 빈 값 허용, 예정일보다 앞서도 허용) | — | 프로젝트ID → 프로젝트 탭 · 담당 → 팀원 탭 또는 빈 값 | (프로젝트ID·마일스톤) — 수정 모드 자기 제외 · 다른 프로젝트의 같은 이름은 허용 | — | (F 상태는 수식 — 필드 아님) |
 | `settlements` | 정산 · 10 (D·E·H·I 수식) | `projectId` | 프로젝트ID | 매출·직접비 집행·사전 등록·현장 참석 = 정수 ≥ 0, 빈 값 `null` | 정산 상태 = 고정(미착수·진행·완료), 빈 값 → `미착수` | 프로젝트ID → 프로젝트 탭 | — ("프로젝트당 1행"은 서버가 보장: 프로젝트 신규 시 자동 추가, 행 삭제 없음, 화면은 수정만) | 프로젝트ID | (수식 열) |
@@ -685,10 +755,10 @@ SPEC v1.2 §5.2 쓰기 경로의 규칙을 코드 한 벌로 고정한다. 검�
 - `keyLabel('items', row)` = `프로젝트ID · 마일스톤 · 블럭 (세부ID)`(신규는 괄호 없음) · `keyLabel('notes', row)` = `주석ID · 세부ID`(마일스톤 전체 주석은 주석ID 만) · `keyLabel('blocks', row)` = `파트 · 블럭`. 변경이력 D 열·확인 문구용
 - `summarize`·`diff` 는 세부ID·작성자·일시(auto)를 제외한다. 예 삭제 = `세부 항목 행 삭제: P-2026-001 · 답사 · 베뉴 서칭·계약 (W-000001)\n함께 삭제: 주석 2` · 동기화 = 표 `assignments`, 동작 `저장`, `extra` = `세부항목 동기화: n행`
 
-### 9.14 기본 업무 블럭 카탈로그 `DEFAULT_BLOCKS` — v1.3 · D14
-- 33건 = 영업 4 · 모객 5 · 운영 PM 8 · 현장 운영 6 · 디자인·제작 6 · 정산·리포트 4(설정 역할 순서). 각 행 `{ part, block, milestone, md, impact, difficulty, judge, skipForHost }` — §2.12 와 같은 필드·같은 타입(`skipForHost` boolean)
-- (파트·블럭) 유일 · 기본 마일스톤은 표준 9종 중 하나 · 기본 M/D 는 0.5 단위 > 0(합계 54.5) · `judge`(판단에 필요한 내용) 비어 있지 않음 · `skipForHost` 는 영업 4건만 `true`(③ 주최형은 발주처가 없음)
-- 단일 원천은 `src/schema.js`. 서버(`ensureBlocksSheetApi_` 의 시드 · 탭 없을 때 `getBootstrap` 폴백)와 mock(`sample-data.json` 의 `blocks` — 테스트가 완전 일치를 검사)이 같은 목록을 쓴다. 시트에서 다듬은 뒤에는 시트가 원천(`meta.blocksSource:"sheet"`) — 코드 목록을 고쳐도 이미 만든 탭에는 반영되지 않는다(탭을 지우고 메뉴로 다시 만들거나 시트에서 직접)
+### 9.14 기본 업무 블럭 카탈로그 `DEFAULT_BLOCKS` — v1.3 · D14 (v1.4 · D22 확장)
+- **44건**(v1.4) = 영업 4 · 모객 5 · 운영 PM 8 · 현장 운영 6 · 디자인·제작 6 · 정산·리포트 4 · **운영총괄 6 · 운영 Sub 5**(설정 역할 순서 — 실시트 역할 8종). 각 행 `{ part, block, milestone, md, impact, difficulty, judge, skipForHost }` — §2.12 와 같은 필드·같은 타입(`skipForHost` boolean)
+- (파트·블럭) 유일 · 기본 마일스톤은 표준 9종 중 하나 · 기본 M/D 는 0.5 단위 > 0(**합계 64.5**) · `judge`(판단에 필요한 내용) 비어 있지 않음 · `skipForHost` 는 영업 4건만 `true`(③ 주최형은 발주처가 없음)
+- 단일 원천은 `src/schema.js`. 서버(`ensureBlocksSheetApi_` 의 시드 · 탭 없을 때 `getBootstrap` 폴백)와 mock(`sample-data.json` 의 `blocks` — 테스트가 **그 시트 역할 목록에 해당하는 블럭과의 완전 일치**를 검사)이 같은 목록을 쓴다. 시트에서 다듬은 뒤에는 시트가 원천(`meta.blocksSource:"sheet"`) — 코드 목록을 고쳐도 이미 만든 탭에는 반영되지 않는다(탭을 지우고 메뉴로 다시 만들거나 시트에서 직접)
 
 ### 9.15 충돌 검사 — D9 (`expected` 스냅샷 대조)
 - 프런트는 폼을 열 때 그 행의 현재 값을 `state.form.expected` 에 복사해 두고, 저장 시 그대로 서버에 보낸다(신규는 `null`).
@@ -700,6 +770,76 @@ SPEC v1.2 §5.2 쓰기 경로의 규칙을 코드 한 벌로 고정한다. 검�
 - **(v1.3)** `items`·`notes` 도 같은 규칙(키 = 세부ID·주석ID). `notes` 는 충돌 검사 뒤 작성자 본인 검사(§5)를 한다. `addItems` 는 `expected` 가 없다(신규만) — 대신 이미 있는 블럭을 `skipped` 로 돌려준다
 
 ### 9.16 검산 목록 (`tests/schema.test.js`)
-§9.1 표 정의 5(v1.3 `field()` 5턴 표 1 포함) · §9.2 정규화·기본값·날짜 5 · §9.3 검증(프로젝트 5 · 팀원 4 · 공수기록 3 · 마일스톤 2 · 정산 2) · §9.4 주간 공수 4 · §9.5 삭제 규칙 6 · §9.6 키 2 · §9.7 diff·summarize 3 · §9.8 toValues 2 = **43건** · **v1.3** §9.9 세부 항목 5 · 주석 3 · §9.10 삭제 3 · §9.11 롤업 3 · §9.12 배정 동기화 7 · §9.13 집계·도우미·키 4 · §9.14 카탈로그 2 = **27건** → **70건**. `tests/sample-data.test.js` 24건(v1.3: 최상위 키 12 · `meta.blocksSource` · §2.10~2.12 · §9.11~9.12 mock 값) · `tests/metrics.test.js` 38건 = 전체 **132건**. 실행: `node --test tests/metrics.test.js tests/sample-data.test.js tests/schema.test.js`(디렉터리 인자 금지 — 파일 경로 나열).
+§9.1 표 정의 5(v1.3 `field()` 5턴 표 1 포함) · §9.2 정규화·기본값·날짜 5 · §9.3 검증(프로젝트 5 · 팀원 4 · 공수기록 3 · 마일스톤 2 · 정산 2) · §9.4 주간 공수 4 · §9.5 삭제 규칙 6 · §9.6 키 2 · §9.7 diff·summarize 3 · §9.8 toValues 2 = **43건** · **v1.3** §9.9 세부 항목 5 · 주석 3 · §9.10 삭제 3 · §9.11 롤업 3 · §9.12 배정 동기화 7 · §9.13 집계·도우미·키 4 · §9.14 카탈로그 2 = **27건** → 70건 · **v1.4** §9.17 본인 매칭·이메일 3 · §9.18 저장 가드 2 · §9.19 되돌리기 4 · §9.20 일괄 처리 4 · §9.21 카탈로그 파생 3 · §9.22 주간 공수 행 3 = **19건** → **89건**. `tests/sample-data.test.js` **27건**(v1.3: 최상위 키 12 · `meta.blocksSource` · §2.10~2.12 · §9.11~9.12 mock 값 · **v1.4**: `meta.userMember` · `members[].email` · 카탈로그 파생) · `tests/metrics.test.js` 38건 = 전체 **154건**. 실행: `node --test tests/metrics.test.js tests/sample-data.test.js tests/schema.test.js`(디렉터리 인자 금지 — 파일 경로 나열) 또는 `npm test`.
 
 미결(v1.3 검산에서 드러난 것, 다음 턴 후보): ① `deleteCheck('members')` 가 세부 항목 담당·주석 작성자 이름 참조를 세지 않음(§9.10) ② `deleteCheck('milestones')` 가 세부 항목이 없을 때 마일스톤 전체 주석을 `cascade.notes` 로만 알림 — 서버 연쇄 삭제 구현이 이 계약(백업 후 삭제)을 따라야 함 ③ `blocks.skipForHost` 의 정의 타입(`text`)과 JSON 타입(boolean) 불일치는 시드 변환으로만 흡수(§9.1).
+
+---
+
+### 9.17 본인 매칭 `matchMember(email, members)` — v1.4 · D17
+- 로그인 이메일 → **팀원 이름** 또는 `''`. `getBootstrap` 이 `meta.userMember`(§2.1)에 싣고, 화면은 값이 있으면 "내 기록: ○○○" 로 고정, 없으면 이름 선택(브라우저 `localStorage` 기억)으로 넘어간다.
+- 비교는 **앞뒤 공백 제거 + 소문자**. 빈 이메일·목록 없음은 `''`(오류를 던지지 않는다).
+- **`퇴사` 팀원은 매칭하지 않는다** — 퇴사자 계정으로 열어도 본인으로 잡히지 않는다. `휴직`·`지원` 은 매칭한다(기록을 남길 수 있어야 한다).
+- 이메일이 여럿 같으면 **앞선 행**이 이긴다. 애초에 `validateRow('members')` 가 팀원 간 중복을 막는다(§9.3 · 아래).
+- **이메일 검증**(`validateRow('members')` 확장) — 빈 값 허용 · 넣으면 `이름@도메인.끝` 형식(도메인 제한 없음, 오류 문구는 `이메일 형식이 아닙니다: "…" (예: hong@company.com)`) · 팀원 간 중복이면 `같은 이메일이 이미 있습니다: ○○○`(수정 모드는 자기 자신 제외). 회사 업무 계정만 쓴다는 규칙(D17)은 **사람이 지키는 규칙**이라 코드가 도메인을 강제하지 않는다.
+
+### 9.18 배정 저장 가드 `assignmentSaveGuard(before, after)` — v1.4 · D20
+- 배정 묶음 저장 **직전에** 무엇이 사라지는지 센다. → `{ removed, removedRows, added, changed, warn }`
+- `removedRows` = `before` 에 있고 `after` 에 없는 **배정ID** 의 행 전체(경고 박스에 팀원·역할·계획 M/D 를 나열하기 위해 행째로 준다) · `removed` = 그 개수
+- `added` = `after` 에서 ID 가 빈 행 수(새 행) · `changed` = 같은 ID 인데 `Schema.diff('assignments', …)` 가 비지 않은 행 수
+- **`warn = removed > 0`** — 참이면 저장하지 않고 2단계 확인을 받는다. 값만 고치거나 추가만 하는 저장은 경고 없이 지나간다.
+- ID 가 없던 행(새 행을 만들었다가 지움)은 "사라진 행" 으로 세지 않는다. 인자가 배열이 아니어도 0 으로 답한다(오류 없음).
+- 자동 행(비고 `자동(세부항목)`)도 같은 규칙으로 센다 — 편집기에서 지우면 경고에 뜨고, 저장 뒤 다음 동기화 때 다시 생긴다(§9.12).
+
+### 9.19 되돌리기 판정 `restoreCheck(entry, data)` · 안내 `restoreLabel(entry)` — v1.4 · D19
+- `entry` = 변경이력 한 줄(`{ sheet, key, action, backup }` — `backup` 은 G열 원문 JSON 문자열 또는 이미 파싱된 배열·객체) → `{ ok, reason, table, rows, mode }`
+- `table` 은 시트 이름 → 표 이름(`RESTORE_TABLES`): `프로젝트`·`배정`·`공수기록`·`팀원`·`마일스톤`·`정산`·`세부항목`·`주석`. 그 밖의 탭(`설정`·`업무블럭` 등)은 거부.
+
+| `action` | 백업 | `mode` | 뜻 |
+|---|---|---|---|
+| `저장` | 행 배열 | `replace` | 그 키의 행 묶음을 백업으로 **교체**(배정 저장·주간 공수 저장·일괄 처리) |
+| `추가` | 있든 없든 | `delete` | 추가의 되돌리기 = **그 행을 지운다** |
+| `수정`·`삭제`·`되돌림` | 1행 | `row` | 그 행을 이전 내용으로 |
+| `수정`·`삭제`·`되돌림` | 2행 이상 | `replace` | 묶음 교체(연쇄 백업) |
+
+- 거부(`ok:false`)와 사유 문구(화면이 버튼 대신 그대로 보여준다):
+  - 프로젝트 `삭제` → `프로젝트 삭제는 배정·마일스톤·정산이 함께 지워져 되돌릴 수 없습니다. 새 프로젝트로 다시 등록하세요.`
+  - `변경이력` 탭 자체 → `변경이력 자체는 되돌릴 수 없습니다.`
+  - 모르는 탭 → `"○○" 탭은 되돌리기를 지원하지 않습니다. 시트에서 직접 고치세요.`
+  - 백업이 JSON 이 아님 → `백업 내용을 읽을 수 없어 되돌릴 수 없습니다. 시트에서 직접 고치세요.`
+  - 백업이 비었는데 `추가` 가 아님 → `되돌릴 이전 내용이 없습니다.`
+- `restoreLabel(entry)` = 버튼 옆 한 줄. `delete` → `이 추가를 취소하고 행을 지웁니다.` · `replace` → `<탭> <키> 을(를) 저장 전 n행으로 되돌립니다.` · `row` → `<탭> <키> 을(를) 이전 내용으로 되돌립니다.` · 거부면 위 사유 그대로.
+- **되돌리기의 되돌리기**: 동작 `되돌림` 인 이력도 같은 규칙으로 되돌릴 수 있다(서버가 복원 직전 상태를 백업에 넣기 때문 — §3.9).
+- 화면은 백업 원문을 받지 않으므로 목록에서는 1차 판정만 하고, **최종 판정·복원은 서버**가 한다(§5.1 · §2.9).
+
+### 9.20 마일스톤 일괄 처리 검증 `validateBulkMilestone(action, rows, payload, ctx)` — v1.4 · D21
+- `action` = `complete` \| `shift` · `rows` = 대상 마일스톤 **현재 행** 배열 · `payload` = `{ done }` 또는 `{ days }`/`{ due }` · `ctx` = §9.1 과 같은 형태 → `{ ok, errors, warnings, values }`
+- `values` = `normalizeRow('milestones', …)` 를 거친 **바뀐 행 배열**(필드는 `projectId·name·due·done·owner` 5개 — F 상태 수식은 건드리지 않는다). `errors` 가 있으면 아무것도 쓰지 않는다.
+
+| 검사 | 규칙 | 오류 문구 |
+|---|---|---|
+| 동작 | `complete` \| `shift` 만 | `완료 처리 또는 예정일 조정만 할 수 있습니다.` |
+| 대상 | 1건 이상 | `처리할 마일스톤을 하나 이상 고르세요.` |
+| `complete` 완료일 | 필수 · `YYYY-MM-DD` 실제 날짜 | `완료일을 고르세요.` / `완료일은 YYYY-MM-DD 형식의 날짜여야 합니다.` |
+| `shift` 조정값 | `days` 정수 **또는** `due` 날짜 중 하나 | `며칠 미룰지(정수) 또는 새 예정일을 넣으세요.` |
+| `shift` 0일 | `days = 0` 거부 | `0일은 바뀌는 것이 없습니다.` |
+| `shift` 지정일 형식 | `YYYY-MM-DD` 실제 날짜 | `예정일은 YYYY-MM-DD 형식의 날짜여야 합니다.` |
+
+- `warnings`(막지 않음, 2단계 확인 문구에 싣는다): 완료일이 **예정일보다 1년 이상 빠르면** `<마일스톤>: 완료일이 예정일보다 1년 이상 빠릅니다. 날짜를 확인하세요.` — 연도를 잘못 고른 실수를 잡기 위한 것이고, 앞당겨 끝낸 정상 처리는 걸리지 않는다.
+- `shift` 규칙: `due` 가 있으면 **전부 그 날짜로**, 없으면 각 행의 예정일에 `days` 를 더한다(문자열 숫자 허용, 음수 = 당기기). **예정일이 빈 행은 그대로 둔다**(기준이 없다). 완료일은 건드리지 않는다.
+
+### 9.21 카탈로그 파생 `blocksWithFallback(blocks, settings)` — v1.4 · D22
+- → `{ list, derivedParts, usedDefault }`. `list` = 화면에 내려보낼 카탈로그(원본 **순서 유지** + 파생분을 뒤에), `derivedParts` = 파생한 파트 이름 배열(설정 역할 순서), `usedDefault` = 시트 카탈로그가 비어 코드 기본값을 썼는지.
+- 기준(base)은 **시트 카탈로그가 있으면 그것**, 비어 있으면 `DEFAULT_BLOCKS`(§9.14). 파트나 블럭 이름이 빈 행은 카탈로그로 세지 않는다(그 파트는 파생 대상이 된다).
+- `settings.roles` 를 순회해 **블럭이 0개인 파트**에 `GENERIC_BLOCKS` 5종을 파트 이름만 바꿔 복제한다 — 업무 범위 정리(발주처 기초자료 수령 · 0.5) / 담당자 배정·일정 합의(운영계획서 확정 · 0.5) / 진행 상황 점검(행사 7일 전 점검 · 0.5) / 행사 당일 대응(행사 당일 · 1) / 결과 정리·인수인계(정산보고 제출 · 0.5). 임팩트·난이도는 중·하(당일 대응만 중·중), `skipForHost` 는 전부 `false`.
+- **역할 목록에 없는 파트의 블럭도 목록에서 빼지 않는다** — 카탈로그(시트·코드)가 단일 원천이고, 역할을 임시로 지웠다고 기존 블럭이 사라지면 안 되기 때문이다. 화면의 파트 선택은 `settings.roles` 를 따른다.
+- 파생분은 **시트에 쓰지 않는다**. 고른 순간 `세부항목` 행이 되고, 그 행의 파트는 역할 목록 값이므로 `validateRow('items')` 를 통과한다.
+
+### 9.22 내 주간 공수 행 `weekEffortRows(member, week, data)` — v1.4 · D18
+- 그 사람·그 주차의 입력 카드에 **미리 깔아 줄 행**을 만든다. → `[{ projectId, label, md, memo, source, logged }]`
+- 순서: ① 그 주와 **겹치는 내 배정 프로젝트**(`source:'배정'`) ② `settings.commonCodes` 3종(`source:'공통'`) ③ 그 주에 **이미 기록된** 코드 중 앞에서 안 나온 것(`source:'기록'`). 같은 코드는 한 번만 나온다.
+- 겹침 판정: 배정 기간이 `week`(월요일) ~ `week+6일` 과 하루라도 겹치면 포함. 배정 시작·종료가 비어 있거나 날짜 형식이 아니면 **포함**(판단할 근거가 없으므로 보여준다).
+- `label` = 프로젝트 행사명(못 찾으면 코드 그대로) · 공통코드는 코드 자체.
+- 기록이 있으면 `md`·`memo` 를 채우고 `logged:true`. 없으면 `md:null`(0 을 미리 채우지 않는다 — "안 적었다" 와 "0 이다" 를 구분).
+- 저장은 기존 `saveEffortWeek`(§5) 그대로 — 화면은 `md` 가 있는 행만 `{ projectId, md, memo }` 로 추려 보내고, 서버·mock 이 `validateEffortWeek`(§9.4)로 같은 검증(중복 코드·월요일·합계 5.0 초과 경고)을 한다.
+- "지난주 값 복사" 는 화면 기능이다 — `weekEffortRows(member, 지난주, data)` 의 `md`·`memo` 를 이번 주 행에 옮겨 담을 뿐 서버 호출이 아니다.

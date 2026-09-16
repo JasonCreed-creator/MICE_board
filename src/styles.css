@@ -544,3 +544,44 @@ table.tb-table tr.is-auto input:disabled, table.tb-table tr.is-auto select:disab
   display: inline-block; margin-top: 4px; padding: 2px 8px; font-size: 11px; line-height: 1.4; border-radius: 6px;
   background: var(--amber-bg); color: var(--amber); font-weight: 600; max-width: 260px;
 }
+
+/* ── 6턴 C1 내 주간 공수 ─────────────────────────────── */
+.tb-my-week-link.is-todo {
+  border-color: var(--orange); background: var(--orange-tint); color: var(--orange-deep); font-weight: 600;
+}
+.tb-my-week > h3 { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tb-my-week .tb-my-hint { flex: 1 1 220px; }
+.tb-my-member { font-size: 13px; color: var(--ink); background: var(--surface-warm); border-radius: 999px; padding: 6px 12px; }
+.tb-my-member strong { color: var(--orange-deep); }
+.tb-my-week .my-name { font-weight: 600; }
+.tb-chip-src {
+  display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 600;
+  background: var(--surface-warm); color: var(--brown); white-space: nowrap;
+}
+.tb-chip-src.is-배정 { background: var(--steel-tint); color: var(--steel); }
+.tb-chip-src.is-공통 { background: var(--surface-warm); color: var(--warm-gray); }
+.tb-chip-src.is-기록 { background: var(--positive-bg); color: var(--positive); }
+.tb-chip-src.is-지난주 { background: var(--amber-bg); color: var(--amber); }
+.tb-chip-src.is-추가 { background: var(--orange-tint); color: var(--orange-deep); }
+
+/* ── 6턴 C2 지연 마일스톤 일괄 처리 ──────────────────── */
+.tb-bulk-pick { display: inline-flex; align-items: center; flex: 0 0 auto; margin: 0; cursor: pointer; }
+.tb-bulk-pick input { width: 16px; height: 16px; accent-color: var(--orange); cursor: pointer; }
+.tb-warn-list li.is-picked { background: var(--orange-tint); border-radius: 6px; }
+.tb-bulk-bar {
+  display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 10px;
+  padding: 10px 12px; background: var(--surface-warm); border: 1px dashed var(--border); border-radius: 10px;
+}
+.tb-bulk-bar .btn.is-on { background: var(--brown); color: var(--paper); }
+.tb-bulk-panel { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; flex: 1 1 100%; }
+.tb-bulk-panel .tb-field { min-width: 130px; }
+.tb-bulk-panel .cap, .tb-bulk-panel .tb-form-warn, .tb-bulk-panel .tb-form-error { flex: 1 1 100%; }
+
+/* ── 6턴 C3 배정 저장 가드 · 되돌리기 ────────────────── */
+.tb-guard { margin-top: 10px; }
+.tb-guard ul { margin: 6px 0 0; padding-left: 18px; }
+.tb-guard li { color: var(--ink); line-height: 1.5; }
+.tb-restore-cell { white-space: nowrap; vertical-align: top; }
+.tb-restore-cell .tb-confirm { white-space: normal; display: inline-flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+.tb-restore-note { display: block; max-width: 240px; white-space: normal; line-height: 1.35; margin-top: 2px; }
+.tb-restore-blocked { display: block; max-width: 240px; white-space: normal; line-height: 1.35; }
