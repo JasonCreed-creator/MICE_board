@@ -82,8 +82,21 @@ function connect(wsUrl) {
   });
 }
 
-async function waitForTarget() {
-  for (let i = 0; i < 50; i++) {
+/**
+ * 브라우저가 디버그 포트를 열 때까지 기다린다.
+ * 공용 러너(GitHub Actions)에서는 첫 기동이 느릴 때가 있어 넉넉히 기다린다 —
+ * 준비되면 즉시 돌아오므로 빠른 환경에서 손해가 없다. 같은 커밋이 한 번은 통과하고
+ * 한 번은 "포트가 열리지 않았습니다" 로 죽은 적이 있어 10초 → 60초로 늘렸다.
+ * proc 을 받으면 브라우저가 중간에 죽은 경우를 기다리지 않고 바로 알린다.
+ */
+async function waitForTarget(proc) {
+  let exited = null;
+  if (proc) { proc.once('exit', (code, signal) => { exited = { code, signal }; }); }
+  const deadline = Date.now() + 60000;
+  while (Date.now() < deadline) {
+    if (exited) {
+      throw new Error('브라우저가 기동 도중 종료했습니다 (종료 코드 ' + exited.code + (exited.signal ? ' · 신호 ' + exited.signal : '') + '). 실행 파일 경로와 실행 권한을 확인하세요: ' + (process.env.CHROME_PATH || '(자동 탐색)'));
+    }
     try {
       const res = await fetch(`http://127.0.0.1:${PORT}/json`);
       const list = await res.json();
@@ -92,7 +105,7 @@ async function waitForTarget() {
     } catch (_) { /* 아직 준비 안 됨 */ }
     await sleep(200);
   }
-  throw new Error('브라우저 디버그 포트가 열리지 않았습니다');
+  throw new Error('브라우저 디버그 포트가 60초 안에 열리지 않았습니다 (포트 ' + PORT + ')');
 }
 
 // 페이지 안에서 식을 평가하고 JSON 값으로 돌려받는다
@@ -234,7 +247,7 @@ async function main() {
 
   let cdp;
   try {
-    const target = await waitForTarget();
+    const target = await waitForTarget(proc);
     cdp = await connect(target.webSocketDebuggerUrl);
     await cdp.send('Page.enable');
     await cdp.send('Runtime.enable');

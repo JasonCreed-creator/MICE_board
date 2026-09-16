@@ -1,6 +1,6 @@
 {
   "browser": "/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
-  "startedAt": "2026-09-15T10:10:25.981Z",
+  "startedAt": "2026-09-16T01:28:45.393Z",
   "consoleErrors": [],
   "mockWrites": [
     "[mock write] getBootstrap",
@@ -2323,5 +2323,5 @@
     "hiddenAfter": true
   },
   "consoleErrorCount": 0,
-  "finishedAt": "2026-09-15T10:11:20.953Z"
+  "finishedAt": "2026-09-16T01:29:40.065Z"
 }
